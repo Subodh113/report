@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EHS Cleaning — Login</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <!-- Firebase compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/auth.js" defer></script>
+</head>
+<body>
+  <main class="card center">
+    <h1>EHS Cleaning — Login</h1>
+    <p class="muted">Sign in with your email and password (Firebase)</p>
+
+    <div class="form">
+      <label>Email</label>
+      <input id="email" type="email" placeholder="supervisor@example.com" />
+      <label>Password</label>
+      <input id="password" type="password" placeholder="password" />
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <button id="loginBtn" class="btn">Sign in</button>
+        <button id="signupBtn" class="btn secondary">Sign up (supervisors)</button>
+      </div>
+      <div id="loginMsg" class="small muted" style="margin-top:8px"></div>
+    </div>
+
+    <hr>
+    <p class="small muted">Admin account to create in Firebase: <code>admin@ifm.com</code></p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Supervisor</title>
+<link rel="stylesheet" href="styles/main.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
+<script src="scripts/firebase-config.js"></script>
+<script src="scripts/auth.js" defer></script>
+<script src="scripts/pptx-utils.js" defer></script>
+<script src="scripts/supervisor.js" defer></script>
+</head><body>
+<header class="topbar"><div class="brand">EHS Cleaning — Supervisor</div><div id="userInfo" class="small">Not signed in</div></header>
+<main class="container">
+<section class="card">
+<h2>Submit Cleaning Activity (9 photos)</h2>
+<div class="row"><div style="flex:1"><label>Activity</label><select id="activitySelect"><option>Loading...</option></select></div>
+<div style="width:220px"><label>Date</label><input id="dateInput" type="date" /></div></div>
+<label style="margin-top:10px">Supervisor name</label><input id="supName" placeholder="Your name" />
+<label style="margin-top:10px">Notes (optional)</label><textarea id="notes" placeholder="Observations"></textarea>
+<div style="margin-top:12px"><p class="small muted">Upload exactly 9 photos (compressed &lt; 300 KB) before submitting.</p><div id="photoGrid" class="grid-3"></div></div>
+<div class="row" style="margin-top:12px"><button id="uploadBtn" class="btn">Upload & Submit</button><button id="previewPpt" class="btn secondary">Local PPT Preview</button><div id="status" class="small muted"></div></div>
+</section>
+<section class="card" style="margin-top:12px"><h3>Your recent submissions</h3><div id="mySubs"></div></section>
+</main></body></html>
