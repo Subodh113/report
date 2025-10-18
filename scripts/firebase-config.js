@@ -17,5 +17,4 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 // Single admin email
-const adminEmails = ["admin@ifm.com"];
-const adminEmails = ["subodh@ifm.com"];
+const adminEmails = ["admin@ifm.com","subodh@ifm.com"];
