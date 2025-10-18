@@ -7,18 +7,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.location.href = 'index.html';
       return;
     }
-    document.getElementById('userInfo').textContent = user.email;
-    document.getElementById('supName').value = user.email.split('@')[0];
+
+    const userEmail = user.email;
+    document.getElementById('userInfo').textContent = userEmail;
+    document.getElementById('supName').value = userEmail.split('@')[0]; // display only
+    document.getElementById('supName').readOnly = true; // prevent mismatch
     document.getElementById('dateInput').value = new Date().toISOString().slice(0, 10);
+
     await loadActivities();
     setupPhotoGrid();
-    loadMySubmissions();
+    await loadMySubmissions(); // load recent submissions on page load
   });
 
   document.getElementById('uploadBtn').addEventListener('click', uploadSubmission);
   document.getElementById('previewPpt').addEventListener('click', previewLocalPpt);
 });
 
+// Load activities into dropdown
 async function loadActivities() {
   const sel = document.getElementById('activitySelect');
   sel.innerHTML = '';
@@ -33,6 +38,7 @@ async function loadActivities() {
   });
 }
 
+// Photo grid setup
 const photoSlots = [];
 
 function setupPhotoGrid() {
@@ -43,13 +49,17 @@ function setupPhotoGrid() {
   for (let i = 0; i < 9; i++) {
     const box = document.createElement('div');
     box.className = 'photo-box';
+
     const head = document.createElement('div');
     head.textContent = 'Photo ' + (i + 1);
+
     const thumb = document.createElement('div');
     thumb.className = 'photo-thumb';
     thumb.textContent = 'No photo';
+
     const desc = document.createElement('input');
     desc.placeholder = 'Short description';
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -91,9 +101,10 @@ function setupPhotoGrid() {
   }
 }
 
+// Convert DataURL to Blob
 function dataURLtoBlob(dataurl) {
-  const arr = dataurl.split(','),
-    mime = arr[0].match(/:(.*?);/)[1];
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
   const bstr = atob(arr[1]);
   let n = bstr.length;
   const u8 = new Uint8Array(n);
@@ -103,14 +114,15 @@ function dataURLtoBlob(dataurl) {
   return new Blob([u8], { type: mime });
 }
 
-// ✅ Cloudinary Upload instead of Firebase Storage
+// Upload submission to Cloudinary + Firestore
 async function uploadSubmission() {
   const activityId = document.getElementById('activitySelect').value;
   if (!activityId) return alert('Select activity');
 
   const date = document.getElementById('dateInput').value;
-  const supName = document.getElementById('supName').value || auth.currentUser.email;
+  const supName = auth.currentUser.email; // use logged-in email
   const notes = document.getElementById('notes').value || '';
+
   if (photoSlots.some(s => !s.data)) return alert('Attach all 9 photos');
 
   document.getElementById('status').textContent = 'Uploading...';
@@ -154,54 +166,59 @@ async function uploadSubmission() {
     await db.collection('submissions').doc(subId).set(doc);
     document.getElementById('status').textContent = '✅ Uploaded successfully!';
     setupPhotoGrid();
-    loadMySubmissions();
+    await loadMySubmissions();
   } catch (err) {
     console.error(err);
     document.getElementById('status').textContent = '❌ Upload failed: ' + (err.message || err);
   }
 }
 
+// Load recent submissions for the logged-in supervisor
 async function loadMySubmissions() {
-  const q = await db
-    .collection('submissions')
-    .where('supervisor', '==', document.getElementById('supName').value)
+  const supEmail = auth.currentUser.email;
+  const q = await db.collection('submissions')
+    .where('supervisor', '==', supEmail)
     .orderBy('createdAt', 'desc')
     .limit(20)
     .get();
 
   const container = document.getElementById('mySubs');
   container.innerHTML = '';
+
+  if (q.empty) {
+    container.innerHTML = '<div class="small muted">No submissions yet</div>';
+    return;
+  }
+
   q.forEach(doc => {
     const d = doc.data();
     const el = document.createElement('div');
     el.className = 'sub-card';
+
+    const photosHtml = (d.photos || []).map(p => `
+      <div style="width:64px;height:48px;overflow:hidden;border-radius:6px">
+        <img src="${p.url}" style="width:100%;height:100%;object-fit:cover">
+      </div>
+    `).join('');
+
     el.innerHTML = `
       <div style="flex:1">
-        <strong>${d.activityName}</strong>
+        <strong>${d.activityName || 'Unknown Activity'}</strong>
         <div class="small muted">${d.date} • ${d.supervisor}</div>
       </div>
-      <div style="display:flex;gap:8px">
-        ${d.photos
-          .slice(0, 3)
-          .map(
-            p => `<div style="width:64px;height:48px;overflow:hidden;border-radius:6px">
-              <img src="${p.url}" style="width:100%;height:100%;object-fit:cover">
-            </div>`
-          )
-          .join('')}
-      </div>`;
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${photosHtml}</div>
+    `;
+
     container.appendChild(el);
   });
 }
 
-// PPT Preview
+// Preview local PPT
 async function previewLocalPpt() {
-  const activity = document.getElementById('activitySelect').options[
-    document.getElementById('activitySelect').selectedIndex
-  ].text;
+  const activity = document.getElementById('activitySelect').selectedOptions[0].text;
   const rec = {
     activity,
-    supervisor: document.getElementById('supName').value,
+    supervisor: auth.currentUser.email,
     notes: document.getElementById('notes').value,
     photos: photoSlots.map(s => ({ desc: s.desc.value, data: s.data })),
   };
