@@ -1,7 +1,7 @@
-// pptx-utils.js — Generate PowerPoint where each slide is one activity with 3x3 images
+// scripts/pptx-utils.js
 async function generateMultiSlidePPT(records, filename) {
   if (!records || !records.length) {
-    alert('No records to generate.');
+    alert('No records found');
     return;
   }
 
@@ -14,8 +14,13 @@ async function generateMultiSlidePPT(records, filename) {
 
   for (const rec of records) {
     const slide = pptx.addSlide();
-    slide.addText(`${rec.activity} — ${rec.supervisor || ''}`, { x: 0.3, y: 0.2, fontSize: 14, bold: true });
-    if (rec.notes) slide.addText('Notes: ' + rec.notes, { x: 0.3, y: 0.5, fontSize: 9, color: '666666' });
+    slide.addText(`${rec.activity} — ${rec.supervisor || ''}`, {
+      x: 0.3, y: 0.2, fontSize: 14, bold: true
+    });
+    if (rec.notes)
+      slide.addText(`Notes: ${rec.notes}`, {
+        x: 0.3, y: 0.5, fontSize: 9, color: '666666'
+      });
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -27,19 +32,19 @@ async function generateMultiSlidePPT(records, filename) {
         const y = marginY + r * (imgH + gap);
 
         try {
-          const base64 = await urlToBase64(photo.url || photo.data);
-          slide.addImage({ data: base64, x, y, w: imgW, h: imgH });
+          const imgData = await getImageBase64(photo.url || photo.data);
+          if (imgData)
+            slide.addImage({ data: imgData, x, y, w: imgW, h: imgH });
+          slide.addText(photo.desc || `Photo ${idx + 1}`, {
+            x,
+            y: y + imgH + 0.03,
+            w: imgW,
+            fontSize: 9,
+            align: 'center'
+          });
         } catch (e) {
-          console.error('Failed to embed image', photo.url, e);
+          console.error('Image add error:', e);
         }
-
-        slide.addText(photo.desc || `Photo ${idx + 1}`, {
-          x,
-          y: y + imgH + 0.03,
-          w: imgW,
-          fontSize: 9,
-          align: 'center'
-        });
       }
     }
   }
@@ -49,14 +54,20 @@ async function generateMultiSlidePPT(records, filename) {
   });
 }
 
-// Convert remote image URL (Cloudinary) to base64
-async function urlToBase64(url) {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+// --- Helper: safely fetch image as base64 ---
+async function getImageBase64(url) {
+  if (!url.startsWith('http')) return url; // already base64
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error('getImageBase64 failed', err);
+    return null;
+  }
 }
