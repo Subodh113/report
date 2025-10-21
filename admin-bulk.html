@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin – Bulk Upload</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/auth.js" defer></script>
+  <script src="scripts/admin-bulk.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">EHS Cleaning — Admin Bulk Upload</div>
+    <div class="right">
+      <span id="userInfo" class="small muted">Not signed in</span>
+      <button id="logoutBtn" class="btn secondary small">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Upload Photos to Gallery</h2>
+      <p class="small muted">Select <strong>minimum 3</strong> and <strong>maximum 9</strong> photos.</p>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Date</label>
+          <input id="uploadDate" type="date" />
+        </div>
+        <div style="flex:1">
+          <label>Activity Name</label>
+          <input id="activityName" placeholder="e.g. Cafeteria Cleaning" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <input id="photoInput" type="file" accept="image/*" multiple />
+        <div id="previewGrid" class="grid-3" style="margin-top:10px"></div>
+      </div>
+
+      <div style="margin-top:10px" class="row">
+        <button id="uploadBtn" class="btn">Upload</button>
+        <div id="status" class="small muted"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Uploaded Gallery</h2>
+      <div id="galleryList"></div>
+    </section>
+  </main>
+</body>
+</html>
