@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EHS Cleaning — Supervisors (Bulk Upload)</title>
+
+  <link rel="stylesheet" href="styles/main.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- Cloudinary -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <!-- Compression + PPTX -->
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
+
+  <!-- App scripts -->
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/auth.js" defer></script>
+  <script src="scripts/pptx-utils.js" defer></script>
+
+  <style>
+    .photo-preview {
+      border: 1px dashed #666;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: #111;
+    }
+    .photo-preview img {
+      width: 100px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #444;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">EHS Cleaning — Supervisors</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="userInfo" class="small">Not signed in</div>
+      <button id="logoutBtn" class="btn secondary small">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Bulk Submit Cleaning Activity</h2>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Activity</label>
+          <select id="activitySelect"><option>Loading...</option></select>
+        </div>
+        <div style="width:220px">
+          <label>Date</label>
+          <input id="dateInput" type="date" />
+        </div>
+      </div>
+
+      <label style="margin-top:10px">Supervisor Name</label>
+      <input id="supName" placeholder="Your name" />
+
+      <label style="margin-top:10px">Notes (optional)</label>
+      <textarea id="notes" placeholder="Observations"></textarea>
+
+      <div style="margin-top:12px">
+        <p class="small muted">Upload <b>minimum 3</b> and <b>maximum 9</b> photos (auto-compressed below 300 KB).</p>
+        <input id="photoInput" type="file" accept="image/*" multiple />
+        <div id="photoPreview" class="photo-preview"></div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="uploadBtn" class="btn">Upload & Submit</button>
+        <button id="previewPpt" class="btn secondary">Local PPT Preview</button>
+        <div id="status" class="small muted"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <h3>Your Recent Submissions</h3>
+      <div id="mySubs"></div>
+    </section>
+  </main>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!firebase || !auth) { alert('Firebase not found'); return; }
+
+    const photoInput = document.getElementById('photoInput');
+    const photoPreview = document.getElementById('photoPreview');
+    let selectedPhotos = [];
+
+    // Load activities
+    const activitySelect = document.getElementById('activitySelect');
+    const q = await db.collection('activities').orderBy('name').get();
+    activitySelect.innerHTML = '';
+    q.forEach(doc => {
+      const d = doc.data();
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = d.name;
+      activitySelect.appendChild(opt);
+    });
+
+    // Handle photo selection and preview
+    photoInput.addEventListener('change', (e) => {
+      selectedPhotos = Array.from(e.target.files);
+      if (selectedPhotos.length < 3 || selectedPhotos.length > 9) {
+        alert('Please select between 3 and 9 photos.');
+        photoInput.value = '';
+        photoPreview.innerHTML = '';
+        selectedPhotos = [];
+        return;
+      }
+      photoPreview.innerHTML = '';
+      selectedPhotos.forEach(file => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        photoPreview.appendChild(img);
+      });
+    });
+
+    // Upload image to Cloudinary with compression
+    async function uploadImage(file) {
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 1920 });
+        const formData = new FormData();
+        formData.append('file', compressed);
+        formData.append('upload_preset', 'Carrier'); // unsigned preset
+        const res = await fetch('https://api.cloudinary.com/v1_1/dsonhgs2i/image/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          console.error('Cloudinary upload failed:', data);
+          alert('Image upload failed. Check console.');
+          return null;
+        }
+        return data;
+      } catch (err) {
+        console.error('Upload error:', err);
+        alert('Upload failed. See console for details.');
+        return null;
+      }
+    }
+
+    // Submit handler
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      const supName = document.getElementById('supName').value.trim();
+      const date = document.getElementById('dateInput').value;
+      const actId = activitySelect.value;
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!supName || !date || !actId || selectedPhotos.length < 3) {
+        alert('Please fill all fields and select between 3 and 9 photos.');
+        return;
+      }
+
+      document.getElementById('status').textContent = 'Uploading photos...';
+
+      const uploadResults = await Promise.all(selectedPhotos.map(f => uploadImage(f)));
+      const urls = uploadResults.filter(r => r).map(up => ({ url: up.secure_url }));
+
+      if (urls.length !== selectedPhotos.length) {
+        document.getElementById('status').textContent = 'Some photos failed to upload.';
+        return;
+      }
+
+      const actDoc = await db.collection('activities').doc(actId).get();
+      const activityName = actDoc.data().name;
+
+      await db.collection('submissions').add({
+        date,
+        activityId: actId,
+        activityName,
+        supervisor: supName,
+        notes,
+        photos: urls,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      document.getElementById('status').textContent = 'Uploaded successfully!';
+      loadMySubs();
+
+      photoInput.value = '';
+      photoPreview.innerHTML = '';
+      selectedPhotos = [];
+    });
+
+    // Load recent submissions
+    async function loadMySubs() {
+      const container = document.getElementById('mySubs');
+      container.innerHTML = 'Loading...';
+      const q = await db.collection('submissions')
+        .where('supervisor', '==', document.getElementById('supName').value || '')
+        .orderBy('timestamp', 'desc').limit(5).get();
+
+      if (q.empty) {
+        container.innerHTML = '<div class="small muted">No recent submissions.</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      q.forEach(doc => {
+        const d = doc.data();
+        const card = document.createElement('div');
+        card.className = 'sub-card';
+        card.innerHTML = `<div><b>${d.activityName}</b> — ${d.date}</div>
+          <div class="grid-3" style="margin-top:6px;">
+            ${d.photos.map(p => `<img src="${p.url}" style="width:100%;border-radius:6px;">`).join('')}
+          </div>`;
+        container.appendChild(card);
+      });
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await auth.signOut();
+      window.location.href = 'index.html';
+    });
+  });
+  </script>
+</body>
+  </html>
