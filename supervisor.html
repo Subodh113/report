@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EHS Cleaning — Supervisor</title>
+  <title>Activity tracker</title>
 
   <link rel="stylesheet" href="styles/main.css">
 
@@ -21,77 +21,207 @@
 
   <!-- App scripts -->
   <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/cloudinary-config.js"></script>
   <script src="scripts/auth.js" defer></script>
   <script src="scripts/pptx-utils.js" defer></script>
-  <script src="scripts/supervisor.js" defer></script>
 
   <style>
-    .photo-slot {
-      border: 1px dashed #888;
-      width: 100%;
-      padding-top: 75%;
-      position: relative;
-      border-radius: 8px;
-      cursor: pointer;
-      overflow: hidden;
-      background: #111;
+    .photo-preview {
+      border:1px dashed #666; border-radius:8px; padding:8px;
+      display:flex; flex-wrap:wrap; gap:8px; background:#111;
     }
-    .photo-slot img {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
+    .photo-preview img { width:100px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #444; }
+    .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">EHS Cleaning — Supervisor</div>
-    <div id="userInfo" class="small">Not signed in</div>
-  </header>
 
-  <main class="container">
-    <section class="card">
-      <h2>Submit Cleaning Activity</h2>
+<header class="topbar">
+  <div class="brand">work — Dashboard</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div id="userInfo" class="small">signed in</div>
+    <button id="logoutBtn" class="btn secondary small">Logout</button>
+  </div>
+</header>
 
-      <div class="row">
-        <div style="flex:1">
-          <label>Activity</label>
-          <select id="activitySelect"><option>Loading...</option></select>
-        </div>
-        <div style="width:220px">
-          <label>Date</label>
-          <input id="dateInput" type="date" />
-        </div>
-      </div>
+<main class="container">
 
-      <label style="margin-top:10px">Supervisor Name</label>
-      <input id="supName" placeholder="Your name" />
+<section class="card">
+  <h2> Activity images submit</h2>
 
-      <label style="margin-top:10px">Notes (optional)</label>
-      <textarea id="notes" placeholder="Observations"></textarea>
+  <div class="row">
+    <div style="flex:1">
+      <label>Department</label>
+      <select id="departmentSelect">
+        <option value="">Select department</option>
+        <option value="ME">M&E</option>
+        <option value="HK">H&K</option>
+        <option value="EHS">EHS</option>
+      </select>
+    </div>
+    <div style="flex:1">
+      <label>Activity</label>
+      <select id="activitySelect"><option>Loading...</option></select>
+    </div>
+    <div style="width:220px">
+      <label>Date</label>
+      <input id="dateInput" type="date" />
+    </div>
+  </div>
 
-      <div style="margin-top:12px">
-        <p class="small muted">Upload exactly 9 photos (each auto-compressed below 300 KB).</p>
-        <div id="photoGrid" class="grid-3"></div>
-      </div>
+  <label style="margin-top:10px">Supervisor Name</label>
+  <input id="supName" placeholder="Your name" />
 
-      <div class="row" style="margin-top:12px">
-        <button id="uploadBtn" class="btn">Upload & Submit</button>
-        <button id="previewPpt" class="btn secondary">Local PPT Preview</button>
-        <div id="status" class="small muted"></div>
-      </div>
-    </section>
+  <label style="margin-top:10px">Notes (optional)</label>
+  <textarea id="notes" placeholder="Observations"></textarea>
 
-    <section class="card" style="margin-top:12px">
-      <h3>Your Recent Submissions</h3>
-      <div id="mySubs"></div>
-    </section>
-  </main>
+  <div style="margin-top:12px">
+    <p class="small muted">Upload <b>minimum 3</b> and <b>maximum 9</b> photos (auto-compressed below 300 KB).</p>
+    <input id="photoInput" type="file" accept="image/*" multiple />
+    <div id="photoPreview" class="photo-preview"></div>
+  </div>
+
+  <div class="row" style="margin-top:12px">
+    <button id="uploadBtn" class="btn">Upload & Submit</button>
+    <button id="previewPpt" class="btn secondary">Local PPT Preview</button>
+    <div id="status" class="small muted"></div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:12px">
+  <h3>Your Recent Submissions</h3>
+  <div id="mySubs"></div>
+</section>
+
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if(!firebase || !auth){ alert('Firebase not found'); return; }
+
+  const photoInput = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photoPreview');
+  let selectedPhotos = [];
+
+  const departmentSelect = document.getElementById('departmentSelect');
+  const activitySelect = document.getElementById('activitySelect');
+
+  // Load activities filtered by department
+  async function loadActivities(dept='') {
+    const q = await db.collection('activities').orderBy('name').get();
+    activitySelect.innerHTML='';
+    q.forEach(doc => {
+      const d = doc.data();
+      if(!dept || d.department===dept){
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.textContent = `[${d.department}] ${d.name}`;
+        activitySelect.appendChild(opt);
+      }
+    });
+    if(activitySelect.options.length===0) activitySelect.innerHTML='<option disabled>No activities</option>';
+  }
+
+  departmentSelect.addEventListener('change', (e)=> loadActivities(e.target.value));
+
+  // Photo selection & preview
+  photoInput.addEventListener('change', (e)=>{
+    selectedPhotos = Array.from(e.target.files);
+    if(selectedPhotos.length<3 || selectedPhotos.length>9){
+      alert('Please select between 3 and 9 photos.');
+      photoInput.value=''; photoPreview.innerHTML=''; selectedPhotos=[];
+      return;
+    }
+    photoPreview.innerHTML='';
+    selectedPhotos.forEach(f=>{
+      const img = document.createElement('img'); img.src = URL.createObjectURL(f); photoPreview.appendChild(img);
+    });
+  });
+
+  // Upload image to Cloudinary
+  async function uploadImage(file){
+    const compressed = await imageCompression(file,{maxSizeMB:0.3, maxWidthOrHeight:1920});
+    const formData = new FormData();
+    formData.append('file', compressed);
+    formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {method:'POST', body:formData});
+    const data = await res.json(); return data.secure_url ? {url:data.secure_url}: null;
+  }
+
+  // Upload handler
+  document.getElementById('uploadBtn').addEventListener('click', async ()=>{
+    const supName = document.getElementById('supName').value.trim();
+    const date = document.getElementById('dateInput').value;
+    const actId = activitySelect.value;
+    const dept = departmentSelect.value;
+    const notes = document.getElementById('notes').value.trim();
+
+    if(!supName || !date || !actId || !dept || selectedPhotos.length<3){
+      alert('Fill all fields and select 3–9 photos'); return;
+    }
+
+    document.getElementById('status').textContent='Uploading photos...';
+    const uploaded = await Promise.all(selectedPhotos.map(f=>uploadImage(f)));
+    const urls = uploaded.filter(r=>r);
+
+    if(urls.length!==selectedPhotos.length){
+      document.getElementById('status').textContent='Some photos failed'; return;
+    }
+
+    const actDoc = await db.collection('activities').doc(actId).get();
+    const activityName = actDoc.data().name;
+
+    await db.collection('submissions').add({
+      date, department:dept, activityId:actId, activityName, supervisor:supName, notes, photos:urls,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('status').textContent='Uploaded successfully!';
+    loadMySubs();
+
+    photoInput.value=''; photoPreview.innerHTML=''; selectedPhotos=[];
+  });
+
+  // Local PPT preview
+  document.getElementById('previewPpt').addEventListener('click', async ()=>{
+    const date = document.getElementById('dateInput').value;
+    if(!date) return alert('Select a date for preview');
+    const q = await db.collection('submissions').where('date','==',date).get();
+    const records = q.docs.map(d=>d.data());
+    if(!records.length) return alert('No submissions for this date');
+    await generateMultiSlidePPT(records, `Preview_${date}.pptx`);
+  });
+
+  // Load recent submissions
+  async function loadMySubs(){
+    const container = document.getElementById('mySubs');
+    const supName = document.getElementById('supName').value.trim();
+    if(!supName){ container.innerHTML='<div class="small muted">Enter your name to load submissions.</div>'; return; }
+    container.innerHTML='Loading...';
+
+    const q = await db.collection('submissions').where('supervisor','==',supName).orderBy('timestamp','desc').limit(10).get();
+    if(q.empty){ container.innerHTML='<div class="small muted">No recent submissions.</div>'; return; }
+
+    container.innerHTML='';
+    q.forEach(doc=>{
+      const d = doc.data();
+      const card = document.createElement('div'); card.className='sub-card';
+      card.innerHTML = `<div><b>[${d.department}] ${d.activityName}</b> — ${d.date}</div>
+        <div class="grid-3">
+          ${d.photos.map(p=>`<img src="${p.url}" style="width:100%;border-radius:6px;">`).join('')}
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById('supName').addEventListener('blur', loadMySubs);
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    await auth.signOut(); window.location.href='index.html';
+  });
+
+});
+</script>
 </body>
 </html>
