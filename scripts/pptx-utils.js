@@ -10,7 +10,7 @@ async function generateMultiSlidePPT(records, filename) {
   const slideH = pptx.height || 5.63;
 
   // Company logo (replace with your actual logo URL)
-  const companyLogoURL = "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2022.svg";
+  const companyLogoURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyTCMtrLBcJmjce2b8m4G-bWzxVYfwpG1JdA&usqp=CAU";
 
   // Define colors
   const headerColor = '014d4d'; // Dark teal
