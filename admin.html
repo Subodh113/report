@@ -1,90 +1,100 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EHS Cleaning — Admin</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EHS Cleaning — Admin</title>
 
-  <link rel="stylesheet" href="styles/main.css">
+<link rel="stylesheet" href="styles/main.css">
 
-  <!-- Firebase Core -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- PPTX Generator -->
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
+<!-- Cloudinary -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 
-  <!-- App Scripts -->
-  <script src="scripts/firebase-config.js"></script>
-  <script src="scripts/auth.js" defer></script>
-  <script src="scripts/pptx-utils.js" defer></script>
-  <script src="scripts/admin.js" defer></script>
+<!-- PPTX Generator -->
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
 
-  <style>
-    .sub-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #0d1321;
-      color: #fff;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .sub-card img {
-      border-radius: 6px;
-    }
-  </style>
+<!-- App scripts -->
+<script src="scripts/firebase-config.js"></script>
+<script src="scripts/cloudinary-config.js"></script>
+<script src="scripts/auth.js" defer></script>
+<script src="scripts/pptx-utils.js" defer></script>
+<script src="scripts/admin.js" defer></script>
+
+<style>
+.sub-card { display:flex; align-items:center; justify-content:space-between; background:#0d1321; color:#fff; padding:12px; border-radius:8px; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+.sub-card img { border-radius:6px; object-fit:cover; }
+.card-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">EHS Cleaning — Admin</div>
-    <div id="userInfo" class="small">Not signed in</div>
-  </header>
+<header class="topbar">
+<div class="brand">EHS Cleaning — Admin</div>
+<div id="userInfo" class="small">Not signed in</div>
+</header>
 
-  <main class="container">
+<main class="container">
 
-    <!-- Manage Activities -->
-    <section class="card">
-      <h2>Manage Activities</h2>
-      <div class="row">
-        <input id="newActivity" placeholder="New activity name" />
-        <button id="addActivity" class="btn">Add</button>
-      </div>
-      <div style="margin-top:10px">
-        <h3>Existing Activities</h3>
-        <div id="activitiesList"></div>
-      </div>
-    </section>
+<!-- Manage Activities -->
+<section class="card">
+  <div class="card-header">
+    <h2>Manage Activities</h2>
+    <button id="toggleActivities" class="btn secondary small">Hide Activities</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <input id="newActivity" placeholder="New activity name" />
+    <select id="deptSelect">
+      <option value="">Select Department</option>
+      <option value="ME">M&E</option>
+      <option value="HK">H&K</option>
+      <option value="EHS">EHS</option>
+    </select>
+    <button id="addActivity" class="btn">Add</button>
+  </div>
+  <div id="existingActivitiesContainer" style="margin-top:10px">
+    <div id="activitiesList"></div>
+  </div>
+</section>
 
-    <!-- Dashboard -->
-    <section class="card" style="margin-top:12px">
-      <h2>Executive Dashboard</h2>
+<!-- Dashboard -->
+<section class="card" style="margin-top:12px">
+<h2>Executive Dashboard</h2>
+<div class="row">
+  <div style="flex:1">
+    <label>Start Date</label>
+    <input id="startDate" type="date" />
+  </div>
+  <div style="flex:1">
+    <label>End Date</label>
+    <input id="endDate" type="date" />
+  </div>
+  <div style="width:180px">
+    <label>Department</label>
+    <select id="departmentFilter">
+      <option value="all">All</option>
+      <option value="ME">M&E</option>
+      <option value="HK">H&K</option>
+      <option value="EHS">EHS</option>
+    </select>
+  </div>
+  <div style="width:220px">
+    <label>Activity</label>
+    <select id="activityFilter"><option value="all">All</option></select>
+  </div>
+</div>
 
-      <div class="row">
-        <div style="flex:1">
-          <label>Select date</label>
-          <input id="datePicker" type="date" />
-        </div>
-        <div style="width:220px">
-          <label>Filter activity</label>
-          <select id="activityFilter"><option value="all">All</option></select>
-        </div>
-      </div>
+<div class="row" style="margin-top:12px">
+  <button id="refreshBtn" class="btn">Load Submissions</button>
+  <button id="downloadPptBtn" class="btn">Download PPT (Range)</button>
+  <div id="adminStatus" class="small muted"></div>
+</div>
 
-      <div class="row" style="margin-top:12px">
-        <button id="refreshBtn" class="btn">Load Submissions</button>
-        <button id="downloadPptBtn" class="btn">Download PPT (date)</button>
-        <div id="adminStatus" class="small muted"></div>
-      </div>
-
-      <div id="subList" style="margin-top:12px"></div>
-    </section>
-
-  </main>
+<div id="subList" style="margin-top:12px"></div>
+</section>
+</main>
 </body>
 </html>
