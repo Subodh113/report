@@ -1,199 +1,173 @@
-// supervisor.js — Supervisor portal using Cloudinary + Firestore
-// Author: Senior Developer (optimized 2025 build)
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!firebase || !auth) { alert('Firebase not configured'); return; }
 
-const CLOUD_NAME = "dsonhgs2i";     // from your Cloudinary dashboard
-const UPLOAD_PRESET = "Carrier";    // unsigned preset you created
-const uploadEndpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+  const userInfo = document.getElementById('userInfo');
+  const photoInput = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photoPreview');
+  let selectedPhotos = [];
 
-let selectedFiles = [];
+  // Load activities
+  const activitySelect = document.getElementById('activitySelect');
+  const activitySnapshot = await db.collection('activities').orderBy('name').get();
+  activitySelect.innerHTML = '';
+  activitySnapshot.forEach(doc => {
+    const d = doc.data();
+    const opt = document.createElement('option');
+    opt.value = doc.id;
+    opt.textContent = `[${d.department}] ${d.name}`;
+    activitySelect.appendChild(opt);
+  });
 
-// Initialize
-document.addEventListener("DOMContentLoaded", async () => {
-  if (!firebase || !auth) {
-    alert("Firebase not configured");
-    return;
-  }
-
-  auth.onAuthStateChanged(async (u) => {
-    if (!u) {
-      window.location.href = "index.html";
+  // Auth
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.href = 'index.html';
       return;
     }
-    document.getElementById("userInfo").textContent = u.email;
-    await loadActivities();
-    buildPhotoGrid();
-    document.getElementById("uploadBtn").addEventListener("click", handleSubmit);
-    document.getElementById("previewPpt").addEventListener("click", localPreview);
+    userInfo.textContent = user.email;
   });
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await auth.signOut();
+    window.location.href = 'index.html';
+  });
+
+  // Photo preview
+  photoInput.addEventListener('change', (e) => {
+    selectedPhotos = Array.from(e.target.files);
+    if (selectedPhotos.length < 3 || selectedPhotos.length > 9) {
+      alert('Please select between 3 and 9 photos.');
+      photoInput.value = '';
+      photoPreview.innerHTML = '';
+      selectedPhotos = [];
+      return;
+    }
+    photoPreview.innerHTML = '';
+    selectedPhotos.forEach(file => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      photoPreview.appendChild(img);
+    });
+  });
+
+  // Upload image to Cloudinary
+  async function uploadImage(file) {
+    try {
+      const compressed = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 1920 });
+      const formData = new FormData();
+      formData.append('file', compressed);
+      formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data));
+      return data;
+    } catch (err) {
+      console.error('Cloudinary upload failed:', err);
+      alert('Photo upload failed. See console.');
+      return null;
+    }
+  }
+
+  // Upload & Submit
+  document.getElementById('uploadBtn').addEventListener('click', async () => {
+    const supName = document.getElementById('supName').value.trim();
+    const date = document.getElementById('dateInput').value;
+    const actId = activitySelect.value;
+    const notes = document.getElementById('notes').value.trim();
+
+    if (!supName || !date || !actId || selectedPhotos.length < 3) {
+      alert('Please fill all fields and select 3–9 photos.');
+      return;
+    }
+
+    document.getElementById('status').textContent = 'Uploading photos...';
+
+    const uploadResults = await Promise.all(selectedPhotos.map(f => uploadImage(f)));
+    const urls = uploadResults.filter(r => r).map(up => ({ url: up.secure_url }));
+
+    if (urls.length !== selectedPhotos.length) {
+      document.getElementById('status').textContent = 'Some photos failed to upload.';
+      return;
+    }
+
+    // Get activity details for department
+    const actDoc = await db.collection('activities').doc(actId).get();
+    const activityName = actDoc.data().name;
+    const department = actDoc.data().department; // <-- department stored here
+
+    await db.collection('submissions').add({
+      date,
+      activityId: actId,
+      activityName,
+      department,         // store department for admin filtering
+      supervisor: supName,
+      notes,
+      photos: urls,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('status').textContent = 'Uploaded successfully!';
+    loadMySubs();
+
+    // Reset
+    photoInput.value = '';
+    photoPreview.innerHTML = '';
+    selectedPhotos = [];
+  });
+
+  // Load recent submissions
+  async function loadMySubs() {
+    const container = document.getElementById('mySubs');
+    const supName = document.getElementById('supName').value.trim();
+    if (!supName) { container.innerHTML = '<div class="small muted">Enter supervisor name</div>'; return; }
+
+    container.innerHTML = 'Loading...';
+    const q = await db.collection('submissions')
+      .where('supervisor', '==', supName)
+      .orderBy('timestamp', 'desc').limit(5)
+      .get();
+
+    if (q.empty) { container.innerHTML = '<div class="small muted">No recent submissions.</div>'; return; }
+
+    container.innerHTML = '';
+    q.forEach(doc => {
+      const d = doc.data();
+      const card = document.createElement('div');
+      card.className = 'sub-card';
+      card.innerHTML = `
+        <div><b>${d.activityName}</b> — ${d.date} • [${d.department}]</div>
+        <div class="grid-3" style="margin-top:6px;">
+          ${d.photos.map(p => `<img src="${p.url}">`).join('')}
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById('previewPpt').addEventListener('click', async () => {
+    const supName = document.getElementById('supName').value.trim();
+    if (!supName) return alert('Enter supervisor name');
+    const q = await db.collection('submissions')
+      .where('supervisor', '==', supName)
+      .orderBy('timestamp', 'desc').limit(5)
+      .get();
+
+    const subs = q.docs.map(d => d.data());
+    if (!subs.length) return alert('No submissions to preview');
+
+    const records = subs.map(s => ({
+      activity: s.activityName,
+      supervisor: s.supervisor,
+      notes: s.notes || '',
+      photos: s.photos.slice(0, 9)
+    }));
+    generateMultiSlidePPT(records, `Preview_${supName}.pptx`);
+  });
+
+  // Initial load
+  loadMySubs();
 });
-
-// ---------------- Activity List ----------------
-async function loadActivities() {
-  const sel = document.getElementById("activitySelect");
-  const q = await db.collection("activities").orderBy("name").get();
-  sel.innerHTML = "";
-  q.forEach((doc) => {
-    const opt = document.createElement("option");
-    opt.value = doc.id;
-    opt.textContent = doc.data().name;
-    sel.appendChild(opt);
-  });
-}
-
-// ---------------- Photo Grid ----------------
-function buildPhotoGrid() {
-  const grid = document.getElementById("photoGrid");
-  grid.innerHTML = "";
-  for (let i = 0; i < 9; i++) {
-    const slot = document.createElement("div");
-    slot.className = "photo-slot";
-    slot.innerHTML = `<input type="file" accept="image/*" style="display:none" id="file${i}">`;
-    slot.addEventListener("click", () => document.getElementById(`file${i}`).click());
-    const fileInput = slot.querySelector("input");
-    fileInput.addEventListener("change", (e) => previewFile(i, e));
-    grid.appendChild(slot);
-  }
-}
-
-async function previewFile(index, event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const compressed = await compressImage(file);
-  selectedFiles[index] = compressed;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const slot = document.querySelectorAll(".photo-slot")[index];
-    slot.innerHTML = `<img src="${e.target.result}">`;
-  };
-  reader.readAsDataURL(compressed);
-}
-
-async function compressImage(file) {
-  const opts = {
-    maxSizeMB: 0.3,
-    maxWidthOrHeight: 1280,
-    useWebWorker: true,
-  };
-  try {
-    return await imageCompression(file, opts);
-  } catch (err) {
-    console.error("Compression error", err);
-    return file;
-  }
-}
-
-// ---------------- Upload & Submit ----------------
-async function handleSubmit() {
-  const date = document.getElementById("dateInput").value;
-  const supName = document.getElementById("supName").value.trim();
-  const notes = document.getElementById("notes").value.trim();
-  const actId = document.getElementById("activitySelect").value;
-  const actName =
-    document.getElementById("activitySelect").selectedOptions[0].textContent;
-
-  if (!date || !supName || !actId) {
-    alert("Fill all fields");
-    return;
-  }
-
-  if (selectedFiles.filter(Boolean).length !== 9) {
-    alert("Please upload exactly 9 photos");
-    return;
-  }
-
-  const status = document.getElementById("status");
-  status.textContent = "Uploading photos...";
-
-  const photos = [];
-  for (let i = 0; i < 9; i++) {
-    const file = selectedFiles[i];
-    const url = await uploadToCloudinary(file);
-    photos.push({ url });
-    status.textContent = `Uploaded ${i + 1}/9`;
-  }
-
-  await db.collection("submissions").add({
-    date,
-    supervisor: supName,
-    notes,
-    activityId: actId,
-    activityName: actName,
-    photos,
-    createdAt: new Date().toISOString(),
-  });
-
-  status.textContent = "Submitted successfully!";
-  buildPhotoGrid();
-  selectedFiles = [];
-  loadMySubs(supName);
-}
-
-async function uploadToCloudinary(file) {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", UPLOAD_PRESET);
-  const res = await fetch(uploadEndpoint, { method: "POST", body: form });
-  const data = await res.json();
-  return data.secure_url;
-}
-
-// ---------------- Local PPT Preview ----------------
-async function localPreview() {
-  if (selectedFiles.filter(Boolean).length === 0) return alert("Upload photos first");
-
-  const slides = [
-    {
-      activity: document.getElementById("activitySelect").selectedOptions[0].textContent,
-      supervisor: document.getElementById("supName").value,
-      notes: document.getElementById("notes").value,
-      photos: await Promise.all(
-        selectedFiles.map(async (f) => {
-          const dataUrl = await fileToDataUrl(f);
-          return { url: dataUrl };
-        })
-      ),
-    },
-  ];
-
-  await generateMultiSlidePPT(slides, "preview.pptx");
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-}
-
-// ---------------- Recent Submissions ----------------
-async function loadMySubs(name) {
-  const q = await db
-    .collection("submissions")
-    .where("supervisor", "==", name)
-    .orderBy("date", "desc")
-    .limit(5)
-    .get();
-
-  const c = document.getElementById("mySubs");
-  c.innerHTML = "";
-  q.forEach((d) => {
-    const data = d.data();
-    const div = document.createElement("div");
-    div.className = "sub-card";
-    div.innerHTML = `
-      <strong>${data.activityName}</strong>
-      <div class="small muted">${data.date}</div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap">
-        ${data.photos
-          .slice(0, 3)
-          .map(
-            (p) =>
-              `<img src="${p.url}" width="64" height="48" style="object-fit:cover;border-radius:6px">`
-          )
-          .join("")}
-      </div>`;
-    c.appendChild(div);
-  });
-}
