@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+body { font-family:'Poppins',sans-serif; margin:0; background:#f6f9fc; }
+header { background: linear-gradient(135deg,#006666,#009999); color:white; padding:18px 0; text-align:center; font-size:22px; font-weight:600; }
+main { max-width:1200px; margin:20px auto; padding:0 15px; }
+h2 { color:#006666; margin-bottom:10px; }
+
+/* Summary Cards */
+.summary-container { display:flex; flex-wrap:wrap; gap:15px; margin-bottom:20px; }
+.summary-card { flex:1; min-width:160px; padding:18px; border-radius:12px; cursor:pointer; text-align:center; color:#333; box-shadow:0 4px 12px rgba(0,0,0,0.05); transition:0.3s; }
+.summary-card:hover { box-shadow:0 6px 16px rgba(0,0,0,0.1); }
+
+/* Tooltip */
+#tooltipModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:1000; }
+.tooltip-content { background:white; padding:20px; border-radius:12px; max-width:95%; max-height:85%; overflow:auto; position:relative; }
+.tooltip-content button { cursor:pointer; margin-bottom:10px; }
+
+/* Tables */
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; }
+th { background:#006666; color:white; text-transform:uppercase; font-size:13px; }
+tr:nth-child(even){ background:#f9f9f9; }
+tr.completed { background:#d4edda; }
+tr.pending { background:#fff3cd; }
+tr.overdue { background:#f8d7da; }
+
+/* Date filter */
+.date-filter { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+.date-filter label { display:flex; flex-direction:column; font-weight:500; }
+.date-filter button { padding:8px 15px; background:#006666; color:white; border:none; border-radius:6px; cursor:pointer; }
+.date-filter button:hover { background:#009999; }
+
+/* Responsive */
+@media(max-width:768px){
+  .summary-card{flex:1 1 100%;}
+  th,td{font-size:12px;}
+  .hide-mobile { display:none; }
+}
+</style>
+</head>
+<body>
+
+<header>KPI Dashboard</header>
+<main>
+
+<!-- Department & Date Filter -->
+<section style="margin-bottom:15px;">
+<label>Select Department:</label>
+<select id="departmentFilter">
+  <option value="All">All Departments</option>
+  <option value="M&E">M&E</option>
+  <option value="H&K">H&K</option>
+  <option value="Security">Security</option>
+  <option value="EHS">EHS</option>
+</select>
+<div class="date-filter">
+  <label>From:<input type="date" id="fromDate"></label>
+  <label>To:<input type="date" id="toDate"></label>
+  <button id="applyFilterBtn">Apply Filter</button>
+</div>
+</section>
+
+<!-- Summary Cards -->
+<section class="summary-container" id="summaryCards">
+  <div class="summary-card" data-type="total" style="background:#eaf5f5;"><h3>Total Activities</h3><p id="totalActivities">0</p></div>
+  <div class="summary-card" data-type="completed" style="background:#d4edda;"><h3>Completed Activities</h3><p id="completedActivitiesCount">0</p></div>
+  <div class="summary-card" data-type="percent" style="background:#fff3cd;"><h3>Completion %</h3><p id="completionPercent">0%</p></div>
+  <div class="summary-card" data-type="notCompleted" style="background:#f8d7da;"><h3>Not Completed</h3><p id="notCompletedCount">0</p></div>
+  <div class="summary-card" data-type="weekly" style="background:#d0e1ff;"><h3>This Week Completed</h3><p id="weeklyCount">0</p></div>
+  <div class="summary-card" data-type="monthly" style="background:#ffd9d9;"><h3>This Month Completed</h3><p id="monthlyCount">0</p></div>
+</section>
+
+<!-- Tooltip / Modal -->
+<div id="tooltipModal">
+  <div class="tooltip-content">
+    <button id="closeTooltip" style="float:right;background:#006666;color:white;padding:6px 12px;border:none;border-radius:6px;">Close</button>
+    <h3 id="tooltipTitle">Details</h3>
+    <button id="downloadExcel" style="background:#009999;color:white;border:none;padding:6px 12px;border-radius:6px;">Download Excel</button>
+    <table id="tooltipTable"></table>
+  </div>
+</div>
+
+<!-- User Performance KPIs -->
+<section style="margin-top:20px;">
+<h2>User Performance KPIs</h2>
+<table id="userPerformanceTable">
+<thead>
+<tr>
+<th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Total Activity</th><th>Completed Activity</th><th>Completion %</th>
+</tr>
+</thead>
+<tbody><tr><td colspan="6">Loading...</td></tr></tbody>
+</table>
+</section>
+
+<!-- Activity Execution KPIs -->
+<section style="margin-top:20px;">
+<h2>Activity Execution KPIs</h2>
+<table id="activityExecutionTable">
+<thead>
+<tr>
+<th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Activity</th><th>Date</th><th>Status</th>
+</tr>
+</thead>
+<tbody><tr><td colspan="6">Loading...</td></tr></tbody>
+</table>
+</section>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain: "facilitymanagement-47470.firebaseapp.com",
+  projectId: "facilitymanagement-47470",
+  storageBucket: "facilitymanagement-47470.firebasestorage.app",
+  messagingSenderId: "638809761503",
+  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+};
+if(!window.firebaseAppsInitialized){ firebase.initializeApp(firebaseConfig); window.firebaseAppsInitialized=true; }
+const db = firebase.firestore();
+
+// ---------------- Load Dashboard ----------------
+async function loadDashboard(){
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const fromDate = document.getElementById('fromDate').value;
+  const toDate = document.getElementById('toDate').value;
+
+  const snap = await db.collection('submissions').orderBy('timestamp','desc').get();
+  let data = snap.docs.map(d=>({id:d.id, ...d.data()}));
+
+  // Filter by department
+  if(deptFilter!=='All') data = data.filter(d=>d.department===deptFilter);
+  // Filter by date range
+  if(fromDate) data = data.filter(d=>d.date>=fromDate);
+  if(toDate) data = data.filter(d=>d.date<=toDate);
+
+  // ---------------- Summary Cards ----------------
+  const total = data.length;
+  const completed = data.filter(d=>d.status==='Completed').length;
+  const notCompleted = total-completed;
+  const percent = total? Math.round((completed/total)*100) : 0;
+
+  // Weekly / Monthly counts
+  const today = new Date();
+  const weekStart = new Date(today); weekStart.setDate(today.getDate()-today.getDay());
+  const monthStart = new Date(today.getFullYear(),today.getMonth(),1);
+  const weeklyCount = data.filter(d=>new Date(d.date)>=weekStart && d.status==='Completed').length;
+  const monthlyCount = data.filter(d=>new Date(d.date)>=monthStart && d.status==='Completed').length;
+
+  document.getElementById('totalActivities').textContent = total;
+  document.getElementById('completedActivitiesCount').textContent = completed;
+  document.getElementById('completionPercent').textContent = percent+'%';
+  document.getElementById('notCompletedCount').textContent = notCompleted;
+  document.getElementById('weeklyCount').textContent = weeklyCount;
+  document.getElementById('monthlyCount').textContent = monthlyCount;
+
+  // ---------------- Tooltip ----------------
+  document.querySelectorAll('.summary-card').forEach(card=>{
+    card.onclick = ()=>{
+      const type = card.dataset.type;
+      document.getElementById('tooltipTitle').textContent = card.querySelector('h3').textContent;
+      const table = document.getElementById('tooltipTable');
+      let rows = [];
+      data.forEach(d=>{
+        if(type==='total' || (type==='completed' && d.status==='Completed') || (type==='notCompleted' && d.status!=='Completed') || (type==='weekly' && new Date(d.date)>=weekStart && d.status==='Completed') || (type==='monthly' && new Date(d.date)>=monthStart && d.status==='Completed')){
+          rows.push([d.date,d.department,d.activityName,d.supervisor,d.status]);
+        }
+      });
+      let html='<tr><th>SL</th><th>Date</th><th>Department</th><th>Activity</th><th>Supervisor</th><th>Status</th></tr>';
+      rows.forEach((r,i)=> html+='<tr>'+`<td>${i+1}</td>`+r.map(v=>`<td>${v}</td>`).join('')+'</tr>');
+      table.innerHTML = html;
+      document.getElementById('tooltipModal').style.display='flex';
+      document.getElementById('downloadExcel').onclick = ()=>{ const wb=XLSX.utils.book_new(); const ws=XLSX.utils.table_to_sheet(table); XLSX.utils.book_append_sheet(wb,ws,"Details"); XLSX.writeFile(wb,`${type}_details.xlsx`); };
+    };
+  });
+
+  // ---------------- User Performance ----------------
+  const userMap = {};
+  data.forEach(d=>{
+    if(!userMap[d.supervisor]) userMap[d.supervisor]={total:0, completed:0};
+    userMap[d.supervisor].total++;
+    if(d.status==='Completed') userMap[d.supervisor].completed++;
+  });
+  const userTable = document.getElementById('userPerformanceTable').querySelector('tbody');
+  userTable.innerHTML='';
+  let sl=1;
+  for(const sup in userMap){
+    const t=userMap[sup].total;
+    const c=userMap[sup].completed;
+    const p=t? Math.round((c/t)*100):0;
+    userTable.innerHTML+=`<tr><td>${sl++}</td><td>${sup}</td><td class="hide-mobile">${deptFilter==='All'?'All':deptFilter}</td><td>${t}</td><td>${c}</td><td>${p}%</td></tr>`;
+  }
+  if(userTable.innerHTML==='') userTable.innerHTML='<tr><td colspan="6">No data</td></tr>';
+
+  // ---------------- Activity Execution ----------------
+  const execTable = document.getElementById('activityExecutionTable').querySelector('tbody');
+  execTable.innerHTML='';
+  let sl2=1;
+  data.forEach(d=>{
+    let cls=''; if(d.status==='Completed') cls='completed'; else if(d.status==='Pending') cls='pending'; else cls='overdue';
+    execTable.innerHTML+=`<tr class="${cls}"><td>${sl2++}</td><td>${d.supervisor}</td><td class="hide-mobile">${d.department}</td><td>${d.activityName}</td><td>${d.date}</td><td>${d.status}</td></tr>`;
+  });
+  if(execTable.innerHTML==='') execTable.innerHTML='<tr><td colspan="6">No data</td></tr>';
+}
+
+// ---------------- Tooltip Close ----------------
+document.getElementById('closeTooltip').addEventListener('click',()=>{ document.getElementById('tooltipModal').style.display='none'; });
+document.getElementById('applyFilterBtn').addEventListener('click',()=>{ loadDashboard(); });
+
+// Initial load
+loadDashboard();
+</script>
+
+</main>
+</body>
+</html>
