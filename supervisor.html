@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Activity tracker</title>
+  <title>Activity Tracker</title>
 
-  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/main.css" />
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -30,68 +30,80 @@
       border:1px dashed #666; border-radius:8px; padding:8px;
       display:flex; flex-wrap:wrap; gap:8px; background:#111;
     }
-    .photo-preview img { width:100px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #444; }
+    .photo-preview img {
+      width:100px; height:80px; object-fit:cover;
+      border-radius:6px; border:1px solid #444;
+    }
     .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .progress-container {
+      margin-top:10px; background:#222; border-radius:6px;
+      height:10px; overflow:hidden;
+    }
+    .progress-bar {
+      height:10px; width:0%; background:#06b6d4;
+      transition:width 0.2s ease;
+    }
   </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand">work — Dashboard</div>
+  <div class="brand">Work — Dashboard</div>
   <div style="display:flex;align-items:center;gap:10px">
-    <div id="userInfo" class="small">signed in</div>
+    <div id="userInfo" class="small">Signed in</div>
     <button id="logoutBtn" class="btn secondary small">Logout</button>
   </div>
 </header>
 
 <main class="container">
 
-<section class="card">
-  <h2> Activity images submit</h2>
+  <section class="card">
+    <h2>Activity Images Submit</h2>
 
-  <div class="row">
-    <div style="flex:1">
-      <label>Department</label>
-      <select id="departmentSelect">
-        <option value="">Select department</option>
-        <option value="ME">M&E</option>
-        <option value="HK">H&K</option>
-        <option value="EHS">EHS</option>
-      </select>
+    <div class="row">
+      <div style="flex:1">
+        <label>Department</label>
+        <select id="departmentSelect">
+          <option value="">Select department</option>
+          <option value="ME">M&E</option>
+          <option value="HK">H&K</option>
+          <option value="EHS">EHS</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label>Activity</label>
+        <select id="activitySelect"><option>Loading...</option></select>
+      </div>
+      <div style="width:220px">
+        <label>Date</label>
+        <input id="dateInput" type="date" />
+      </div>
     </div>
-    <div style="flex:1">
-      <label>Activity</label>
-      <select id="activitySelect"><option>Loading...</option></select>
+
+    <label style="margin-top:10px">Supervisor Name</label>
+    <input id="supName" placeholder="Your name" />
+
+    <label style="margin-top:10px">Notes (optional)</label>
+    <textarea id="notes" placeholder="Observations"></textarea>
+
+    <div style="margin-top:12px">
+      <p class="small muted">Upload <b>minimum 3</b> and <b>maximum 9</b> photos (auto-compressed below 300 KB).</p>
+      <input id="photoInput" type="file" accept="image/*" multiple />
+      <div id="photoPreview" class="photo-preview"></div>
+      <div class="progress-container"><div id="uploadProgress" class="progress-bar"></div></div>
     </div>
-    <div style="width:220px">
-      <label>Date</label>
-      <input id="dateInput" type="date" />
+
+    <div class="row" style="margin-top:12px">
+      <button id="uploadBtn" class="btn">Upload & Submit</button>
+      <button id="previewPpt" class="btn secondary">Local PPT Preview</button>
+      <div id="status" class="small muted"></div>
     </div>
-  </div>
+  </section>
 
-  <label style="margin-top:10px">Supervisor Name</label>
-  <input id="supName" placeholder="Your name" />
-
-  <label style="margin-top:10px">Notes (optional)</label>
-  <textarea id="notes" placeholder="Observations"></textarea>
-
-  <div style="margin-top:12px">
-    <p class="small muted">Upload <b>minimum 3</b> and <b>maximum 9</b> photos (auto-compressed below 300 KB).</p>
-    <input id="photoInput" type="file" accept="image/*" multiple />
-    <div id="photoPreview" class="photo-preview"></div>
-  </div>
-
-  <div class="row" style="margin-top:12px">
-    <button id="uploadBtn" class="btn">Upload & Submit</button>
-    <button id="previewPpt" class="btn secondary">Local PPT Preview</button>
-    <div id="status" class="small muted"></div>
-  </div>
-</section>
-
-<section class="card" style="margin-top:12px">
-  <h3>Your Recent Submissions</h3>
-  <div id="mySubs"></div>
-</section>
+  <section class="card" style="margin-top:12px">
+    <h3>Your Recent Submissions</h3>
+    <div id="mySubs"></div>
+  </section>
 
 </main>
 
@@ -99,16 +111,32 @@
 document.addEventListener('DOMContentLoaded', async () => {
   if(!firebase || !auth){ alert('Firebase not found'); return; }
 
+  const dbRef = firebase.firestore();
+
   const photoInput = document.getElementById('photoInput');
   const photoPreview = document.getElementById('photoPreview');
+  const progressBar = document.getElementById('uploadProgress');
   let selectedPhotos = [];
 
   const departmentSelect = document.getElementById('departmentSelect');
   const activitySelect = document.getElementById('activitySelect');
+  const supNameInput = document.getElementById('supName');
+  const dateInput = document.getElementById('dateInput');
+  const statusDiv = document.getElementById('status');
 
-  // Load activities filtered by department
+  // --- 1️⃣ Default today's date ---
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.value = today;
+
+  // --- 2️⃣ Load saved department & supervisor from localStorage ---
+  const savedDept = localStorage.getItem('dept');
+  const savedSup = localStorage.getItem('sup');
+  if (savedDept) departmentSelect.value = savedDept;
+  if (savedSup) supNameInput.value = savedSup;
+
+  // --- 3️⃣ Load activities filtered by department ---
   async function loadActivities(dept='') {
-    const q = await db.collection('activities').orderBy('name').get();
+    const q = await dbRef.collection('activities').orderBy('name').get();
     activitySelect.innerHTML='';
     q.forEach(doc => {
       const d = doc.data();
@@ -119,13 +147,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         activitySelect.appendChild(opt);
       }
     });
-    if(activitySelect.options.length===0) activitySelect.innerHTML='<option disabled>No activities</option>';
+    if(activitySelect.options.length===0)
+      activitySelect.innerHTML='<option disabled>No activities</option>';
   }
 
-  departmentSelect.addEventListener('change', (e)=> loadActivities(e.target.value));
+  departmentSelect.addEventListener('change', e=>{
+    const val = e.target.value;
+    localStorage.setItem('dept', val);
+    loadActivities(val);
+  });
 
-  // Photo selection & preview
-  photoInput.addEventListener('change', (e)=>{
+  supNameInput.addEventListener('blur', ()=> {
+    localStorage.setItem('sup', supNameInput.value.trim());
+    loadMySubs();
+  });
+
+  await loadActivities(departmentSelect.value || '');
+
+  // --- Photo selection preview ---
+  photoInput.addEventListener('change', e=>{
     selectedPhotos = Array.from(e.target.files);
     if(selectedPhotos.length<3 || selectedPhotos.length>9){
       alert('Please select between 3 and 9 photos.');
@@ -134,24 +174,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     photoPreview.innerHTML='';
     selectedPhotos.forEach(f=>{
-      const img = document.createElement('img'); img.src = URL.createObjectURL(f); photoPreview.appendChild(img);
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      photoPreview.appendChild(img);
     });
   });
 
-  // Upload image to Cloudinary
-  async function uploadImage(file){
+  // --- Upload with progress feedback ---
+  async function uploadImage(file, index, total) {
     const compressed = await imageCompression(file,{maxSizeMB:0.3, maxWidthOrHeight:1920});
     const formData = new FormData();
     formData.append('file', compressed);
     formData.append('upload_preset', cloudinaryConfig.uploadPreset);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {method:'POST', body:formData});
-    const data = await res.json(); return data.secure_url ? {url:data.secure_url}: null;
+
+    const xhr = new XMLHttpRequest();
+    const promise = new Promise((resolve, reject)=>{
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`);
+      xhr.upload.addEventListener('progress', e=>{
+        if(e.lengthComputable){
+          const single = (e.loaded / e.total) * (1/total) * 100;
+          progressBar.style.width = Math.min(100, ((index/total)*100 + single)) + '%';
+        }
+      });
+      xhr.onload = ()=> resolve(JSON.parse(xhr.responseText));
+      xhr.onerror = reject;
+      xhr.send(formData);
+    });
+    return promise;
   }
 
-  // Upload handler
+  // --- Upload handler ---
   document.getElementById('uploadBtn').addEventListener('click', async ()=>{
-    const supName = document.getElementById('supName').value.trim();
-    const date = document.getElementById('dateInput').value;
+    const supName = supNameInput.value.trim();
+    const date = dateInput.value;
     const actId = activitySelect.value;
     const dept = departmentSelect.value;
     const notes = document.getElementById('notes').value.trim();
@@ -160,52 +215,74 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Fill all fields and select 3–9 photos'); return;
     }
 
-    document.getElementById('status').textContent='Uploading photos...';
-    const uploaded = await Promise.all(selectedPhotos.map(f=>uploadImage(f)));
-    const urls = uploaded.filter(r=>r);
+    statusDiv.textContent='Uploading photos...';
+    progressBar.style.width='0%';
 
-    if(urls.length!==selectedPhotos.length){
-      document.getElementById('status').textContent='Some photos failed'; return;
+    const uploaded = [];
+    for (let i=0; i<selectedPhotos.length; i++){
+      try {
+        const data = await uploadImage(selectedPhotos[i], i, selectedPhotos.length);
+        if(data.secure_url) uploaded.push({url:data.secure_url});
+      } catch {
+        console.warn('Upload failed for image', i);
+      }
     }
 
-    const actDoc = await db.collection('activities').doc(actId).get();
-    const activityName = actDoc.data().name;
+    if(uploaded.length!==selectedPhotos.length){
+      statusDiv.textContent='Some photos failed';
+      progressBar.style.width='100%'; return;
+    }
 
-    await db.collection('submissions').add({
-      date, department:dept, activityId:actId, activityName, supervisor:supName, notes, photos:urls,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    const actDoc = await dbRef.collection('activities').doc(actId).get();
+    const activityName = actDoc.exists ? actDoc.data().name : 'Unknown';
+
+    await dbRef.collection('submissions').add({
+      date, department:dept, activityId:actId, activityName, supervisor:supName, notes,
+      photos:uploaded, timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    document.getElementById('status').textContent='Uploaded successfully!';
+    statusDiv.textContent='Uploaded successfully!';
+    progressBar.style.width='100%';
     loadMySubs();
-
     photoInput.value=''; photoPreview.innerHTML=''; selectedPhotos=[];
   });
 
-  // Local PPT preview
+  // --- Local PPT preview ---
   document.getElementById('previewPpt').addEventListener('click', async ()=>{
-    const date = document.getElementById('dateInput').value;
+    const date = dateInput.value;
     if(!date) return alert('Select a date for preview');
-    const q = await db.collection('submissions').where('date','==',date).get();
+    const q = await dbRef.collection('submissions').where('date','==',date).get();
     const records = q.docs.map(d=>d.data());
     if(!records.length) return alert('No submissions for this date');
     await generateMultiSlidePPT(records, `Preview_${date}.pptx`);
   });
 
-  // Load recent submissions
+  // --- Load recent submissions ---
   async function loadMySubs(){
     const container = document.getElementById('mySubs');
-    const supName = document.getElementById('supName').value.trim();
-    if(!supName){ container.innerHTML='<div class="small muted">Enter your name to load submissions.</div>'; return; }
+    const supName = supNameInput.value.trim();
+    if(!supName){
+      container.innerHTML='<div class="small muted">Enter your name to load submissions.</div>';
+      return;
+    }
     container.innerHTML='Loading...';
 
-    const q = await db.collection('submissions').where('supervisor','==',supName).orderBy('timestamp','desc').limit(10).get();
-    if(q.empty){ container.innerHTML='<div class="small muted">No recent submissions.</div>'; return; }
+    const q = await dbRef.collection('submissions')
+      .where('supervisor','==',supName)
+      .orderBy('timestamp','desc')
+      .limit(10)
+      .get();
+
+    if(q.empty){
+      container.innerHTML='<div class="small muted">No recent submissions.</div>';
+      return;
+    }
 
     container.innerHTML='';
     q.forEach(doc=>{
       const d = doc.data();
-      const card = document.createElement('div'); card.className='sub-card';
+      const card = document.createElement('div');
+      card.className='sub-card';
       card.innerHTML = `<div><b>[${d.department}] ${d.activityName}</b> — ${d.date}</div>
         <div class="grid-3">
           ${d.photos.map(p=>`<img src="${p.url}" style="width:100%;border-radius:6px;">`).join('')}
@@ -214,13 +291,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  document.getElementById('supName').addEventListener('blur', loadMySubs);
-
-  // Logout
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await auth.signOut(); window.location.href='index.html';
   });
-
 });
 </script>
 </body>
