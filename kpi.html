@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>KPI Dashboard</title>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<!-- Utilities -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/pptxgenjs@latest/dist/pptxgen.min.js"></script>
 
 <style>
 body { font-family:'Poppins',sans-serif; margin:0; background:#f6f9fc; }
 header { background: linear-gradient(135deg,#006666,#009999); color:white; padding:18px 0; text-align:center; font-size:22px; font-weight:600; }
 main { max-width:1200px; margin:20px auto; padding:0 15px; }
-h2 { color:#006666; margin-bottom:10px; }
+h2 { color:#006666; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 
 /* Summary Cards */
 .summary-container { display:flex; flex-wrap:wrap; gap:15px; margin-bottom:20px; }
@@ -39,6 +45,9 @@ tr.overdue { background:#f8d7da; }
 .date-filter button { padding:8px 15px; background:#006666; color:white; border:none; border-radius:6px; cursor:pointer; }
 .date-filter button:hover { background:#009999; }
 
+/* Toggle icon */
+.toggle-icon { cursor:pointer; font-size:18px; background:#006666; color:white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; }
+
 /* Responsive */
 @media(max-width:768px){
   .summary-card{flex:1 1 100%;}
@@ -52,24 +61,23 @@ tr.overdue { background:#f8d7da; }
 <header>KPI Dashboard</header>
 <main>
 
-<!-- Department & Date Filter -->
 <section style="margin-bottom:15px;">
-<label>Select Department:</label>
-<select id="departmentFilter">
-  <option value="All">All Departments</option>
-  <option value="M&E">M&E</option>
-  <option value="H&K">H&K</option>
-  <option value="Security">Security</option>
-  <option value="EHS">EHS</option>
-</select>
-<div class="date-filter">
-  <label>From:<input type="date" id="fromDate"></label>
-  <label>To:<input type="date" id="toDate"></label>
-  <button id="applyFilterBtn">Apply Filter</button>
-</div>
+  <label>Select Department:</label>
+  <select id="departmentFilter">
+    <option value="All">All Departments</option>
+    <option value="M&E">M&E</option>
+    <option value="H&K">H&K</option>
+    <option value="Security">Security</option>
+    <option value="EHS">EHS</option>
+  </select>
+  <div class="date-filter">
+    <label>From:<input type="date" id="fromDate"></label>
+    <label>To:<input type="date" id="toDate"></label>
+    <button id="applyFilterBtn">Apply Filter</button>
+    <button id="downloadPptBtn" style="background:#009999;color:white;border:none;padding:6px 12px;border-radius:6px;">Download PPT</button>
+  </div>
 </section>
 
-<!-- Summary Cards -->
 <section class="summary-container" id="summaryCards">
   <div class="summary-card" data-type="total" style="background:#eaf5f5;"><h3>Total Activities</h3><p id="totalActivities">0</p></div>
   <div class="summary-card" data-type="completed" style="background:#d4edda;"><h3>Completed Activities</h3><p id="completedActivitiesCount">0</p></div>
@@ -79,43 +87,48 @@ tr.overdue { background:#f8d7da; }
   <div class="summary-card" data-type="monthly" style="background:#ffd9d9;"><h3>This Month Completed</h3><p id="monthlyCount">0</p></div>
 </section>
 
-<!-- Tooltip / Modal -->
 <div id="tooltipModal">
   <div class="tooltip-content">
     <button id="closeTooltip" style="float:right;background:#006666;color:white;padding:6px 12px;border:none;border-radius:6px;">Close</button>
     <h3 id="tooltipTitle">Details</h3>
     <button id="downloadExcel" style="background:#009999;color:white;border:none;padding:6px 12px;border-radius:6px;">Download Excel</button>
+    <button id="downloadPptTooltipBtn" style="background:#006666;color:white;border:none;padding:6px 12px;border-radius:6px;margin-left:10px;">Download PPT (Completed)</button>
     <table id="tooltipTable"></table>
   </div>
 </div>
 
-<!-- User Performance KPIs -->
 <section style="margin-top:20px;">
-<h2>User Performance KPIs</h2>
-<table id="userPerformanceTable">
-<thead>
-<tr>
-<th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Total Activity</th><th>Completed Activity</th><th>Completion %</th>
-</tr>
-</thead>
-<tbody><tr><td colspan="6">Loading...</td></tr></tbody>
-</table>
+  <h2>User Performance KPIs</h2>
+  <table id="userPerformanceTable">
+    <thead>
+      <tr>
+        <th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Total Activity</th><th>Completed Activity</th><th>Completion %</th>
+      </tr>
+    </thead>
+    <tbody><tr><td colspan="6">Loading...</td></tr></tbody>
+  </table>
 </section>
 
-<!-- Activity Execution KPIs -->
 <section style="margin-top:20px;">
-<h2>Activity Execution KPIs</h2>
-<table id="activityExecutionTable">
-<thead>
-<tr>
-<th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Activity</th><th>Date</th><th>Status</th>
-</tr>
-</thead>
-<tbody><tr><td colspan="6">Loading...</td></tr></tbody>
-</table>
+  <h2>Activity Execution KPIs 
+    <span class="toggle-icon" id="toggleExecution" title="Minimize / Maximize">−</span>
+  </h2>
+  <div id="executionContainer">
+    <table id="activityExecutionTable">
+      <thead>
+        <tr>
+          <th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Activity</th><th>Date</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="6">Loading...</td></tr></tbody>
+    </table>
+  </div>
 </section>
 
 <script>
+// ===============================================
+// 1. FIREBASE INITIALIZATION AND DATA HANDLING
+// ===============================================
 const firebaseConfig = {
   apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
   authDomain: "facilitymanagement-47470.firebaseapp.com",
@@ -127,28 +140,152 @@ const firebaseConfig = {
 if(!window.firebaseAppsInitialized){ firebase.initializeApp(firebaseConfig); window.firebaseAppsInitialized=true; }
 const db = firebase.firestore();
 
-// ---------------- Load Dashboard ----------------
+let globalData = [];
+
+// ===============================================
+// 2. HELPERS (image fetch + PPT utils)
+// ===============================================
+
+async function getImageBase64(url) {
+  if (!url) return null;
+  // If already a data URL or not http (e.g., base64 stored) return as-is
+  if (!url.startsWith('http')) return url;
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error('getImageBase64 failed:', err);
+    return null;
+  }
+}
+
+async function generateMultiSlidePPT(records, filename) {
+  if (!records || !records.length) {
+    alert('No records found');
+    return;
+  }
+  if (typeof PptxGenJS === 'undefined' || typeof JSZip === 'undefined') {
+    console.error("PPT Libraries (PptxGenJS or JSZip) not loaded.");
+    throw new Error("PPT Libraries not loaded.");
+  }
+
+  const pptx = new PptxGenJS();
+  const slideW = pptx.width || 10;
+  const slideH = pptx.height || 5.63;
+
+  const companyLogoURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyTCMtrLBcJmjce2b8m4G-bWzxVYfwpG1JdA&usqp=CAU";
+  const headerColor = '014d4d';
+  const dottedColor = '014d4d';
+
+  let logoData = null;
+  try { logoData = await getImageBase64(companyLogoURL); } catch (e) { console.warn('Logo load failed', e); }
+
+  for (const rec of records) {
+    const slide = pptx.addSlide();
+    const activityTitle = rec.activityName || rec.activity || "Untitled Activity";
+
+    slide.background = {
+      type: 'pattern',
+      pattern: 'pct5',
+      fgColor: dottedColor,
+      bgColor: 'FFFFFF',
+    };
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: '100%', h: 0.7, fill: { color: headerColor },
+    });
+
+    const supervisorName = rec.supervisor ? `Supervisor: ${rec.supervisor}` : 'Supervisor: N/A';
+    slide.addText(supervisorName, { x: 0.3, y: 0.2, fontSize: 10, color: 'FFFFFF', bold: true });
+
+    if (logoData) {
+      slide.addImage({ data: logoData, x: slideW - 1.8, y: 0.1, w: 1.3, h: 0.5 });
+    }
+
+    slide.addText(activityTitle, { x: 2.5, y: 0.2, w: 5, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center' });
+
+    const photos = rec.photos || [];
+    const count = photos.length;
+    if (!count) continue;
+
+    const cols = Math.min(3, count);
+    const rows = Math.ceil(count / cols);
+
+    const gap = 0.18;
+    const availableHeight = slideH - 1.1;
+    const availableWidth = slideW - 0.6;
+
+    const imgW = Math.min(3, (availableWidth - (cols - 1) * gap) / cols);
+    const imgH = Math.min(2, (availableHeight - (rows - 1) * gap) / rows);
+
+    const totalGridW = cols * imgW + (cols - 1) * gap;
+    const totalGridH = rows * imgH + (rows - 1) * gap;
+    const marginX = (slideW - totalGridW) / 2;
+    const marginY = (slideH - totalGridH) / 2 + 0.2;
+
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const x = marginX + c * (imgW + gap);
+      const y = marginY + r * (imgH + gap);
+
+      try {
+        const photoUrl = photos[i].url || photos[i];
+        const imgData = await getImageBase64(photoUrl);
+        if (imgData) slide.addImage({ data: imgData, x, y, w: imgW, h: imgH });
+      } catch (err) {
+        console.error('Image load/placement error:', err);
+      }
+    }
+  }
+
+  await pptx.writeFile({ fileName: filename || `EHS_${new Date().toISOString().slice(0, 10)}.pptx` });
+}
+
+// ===============================================
+// 3. CORE DASHBOARD LOGIC (with requested changes)
+// ===============================================
 async function loadDashboard(){
   const deptFilter = document.getElementById('departmentFilter').value;
   const fromDate = document.getElementById('fromDate').value;
   const toDate = document.getElementById('toDate').value;
 
+  // fetch submissions
   const snap = await db.collection('submissions').orderBy('timestamp','desc').get();
   let data = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  globalData = data; // keep a full copy
 
-  // Filter by department
+  // filter by department & date for display
   if(deptFilter!=='All') data = data.filter(d=>d.department===deptFilter);
-  // Filter by date range
   if(fromDate) data = data.filter(d=>d.date>=fromDate);
   if(toDate) data = data.filter(d=>d.date<=toDate);
+
+  // 1) Treat undefined activity OR has photos as Completed (applies to counts & displayed status)
+  data.forEach(d=>{
+    // normalize status to string if missing
+    if(!d.status) d.status = '';
+    // If status already Completed, keep it
+    if(d.status !== 'Completed'){
+      // if activityName missing OR photos array exists with at least one item -> consider Completed
+      if(!d.activityName || (d.photos && Array.isArray(d.photos) && d.photos.length > 0)){
+        d.status = 'Completed';
+      }
+    }
+  });
 
   // ---------------- Summary Cards ----------------
   const total = data.length;
   const completed = data.filter(d=>d.status==='Completed').length;
-  const notCompleted = total-completed;
-  const percent = total? Math.round((completed/total)*100) : 0;
+  const notCompleted = total - completed;
+  const percent = total ? Math.round((completed/total)*100) : 0;
 
-  // Weekly / Monthly counts
   const today = new Date();
   const weekStart = new Date(today); weekStart.setDate(today.getDate()-today.getDay());
   const monthStart = new Date(today.getFullYear(),today.getMonth(),1);
@@ -162,58 +299,152 @@ async function loadDashboard(){
   document.getElementById('weeklyCount').textContent = weeklyCount;
   document.getElementById('monthlyCount').textContent = monthlyCount;
 
-  // ---------------- Tooltip ----------------
+  // ---------------- Summary-card click: Tooltip table + downloads ----------------
   document.querySelectorAll('.summary-card').forEach(card=>{
     card.onclick = ()=>{
       const type = card.dataset.type;
       document.getElementById('tooltipTitle').textContent = card.querySelector('h3').textContent;
       const table = document.getElementById('tooltipTable');
-      let rows = [];
-      data.forEach(d=>{
-        if(type==='total' || (type==='completed' && d.status==='Completed') || (type==='notCompleted' && d.status!=='Completed') || (type==='weekly' && new Date(d.date)>=weekStart && d.status==='Completed') || (type==='monthly' && new Date(d.date)>=monthStart && d.status==='Completed')){
-          rows.push([d.date,d.department,d.activityName,d.supervisor,d.status]);
-        }
+      const filteredRecords = data.filter(d=>{
+        if(type==='total') return true;
+        if(type==='completed' && d.status==='Completed') return true;
+        if(type==='notCompleted' && d.status!=='Completed') return true;
+        if(type==='weekly' && new Date(d.date)>=weekStart && d.status==='Completed') return true;
+        if(type==='monthly' && new Date(d.date)>=monthStart && d.status==='Completed') return true;
+        // for percent we show all (same as total)
+        if(type==='percent') return true;
+        return false;
       });
-      let html='<tr><th>SL</th><th>Date</th><th>Department</th><th>Activity</th><th>Supervisor</th><th>Status</th></tr>';
-      rows.forEach((r,i)=> html+='<tr>'+`<td>${i+1}</td>`+r.map(v=>`<td>${v}</td>`).join('')+'</tr>');
+
+      // Build table
+      let html = '<tr><th>SL</th><th>Date</th><th>Department</th><th>Activity</th><th>Supervisor</th><th>Status</th></tr>';
+      filteredRecords.forEach((d,i)=>{
+        const date = d.date || 'N/A';
+        const dept = d.department || 'N/A';
+        const act = d.activityName || d.activity || 'N/A';
+        const sup = d.supervisor || 'N/A';
+        const st = d.status || 'N/A';
+        html += `<tr class="${st==='Completed' ? 'completed' : st==='Pending' ? 'pending' : 'overdue'}"><td>${i+1}</td><td>${date}</td><td>${dept}</td><td>${act}</td><td>${sup}</td><td>${st}</td></tr>`;
+      });
+
       table.innerHTML = html;
       document.getElementById('tooltipModal').style.display='flex';
-      document.getElementById('downloadExcel').onclick = ()=>{ const wb=XLSX.utils.book_new(); const ws=XLSX.utils.table_to_sheet(table); XLSX.utils.book_append_sheet(wb,ws,"Details"); XLSX.writeFile(wb,`${type}_details.xlsx`); };
+
+      // Excel download
+      document.getElementById('downloadExcel').onclick = ()=>{
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.table_to_sheet(table);
+          XLSX.utils.book_append_sheet(wb, ws, "Details");
+          XLSX.writeFile(wb, `${type}_details_${new Date().toISOString().slice(0,10)}.xlsx`);
+        } catch (e) {
+          console.error('Excel download failed', e);
+          alert('Failed to generate Excel. Check console.');
+        }
+      };
+
+      // Tooltip PPT Download (Completed Only)
+      document.getElementById('downloadPptTooltipBtn').onclick = async ()=>{
+        const pptData = filteredRecords.filter(r => r.status === 'Completed' && r.photos && r.photos.length > 0);
+        if(!pptData.length){ alert('No completed activities with photos to download.'); return; }
+        try {
+          await generateMultiSlidePPT(pptData, `Completed_Activities_${new Date().toISOString().slice(0,10)}.pptx`);
+        } catch (error) {
+          console.error("PPT Generation Failed:", error);
+          alert('Failed to generate or download the PPT. Check the console for details.');
+        }
+      };
     };
   });
 
-  // ---------------- User Performance ----------------
+  // ---------------- User Performance / Execution Tables ----------------
   const userMap = {};
   data.forEach(d=>{
-    if(!userMap[d.supervisor]) userMap[d.supervisor]={total:0, completed:0};
-    userMap[d.supervisor].total++;
-    if(d.status==='Completed') userMap[d.supervisor].completed++;
+    const sup = d.supervisor || 'Unknown';
+    if(!userMap[sup]) userMap[sup] = { total:0, completed:0 };
+    userMap[sup].total++;
+    if(d.status==='Completed') userMap[sup].completed++;
   });
-  const userTable = document.getElementById('userPerformanceTable').querySelector('tbody');
-  userTable.innerHTML='';
-  let sl=1;
-  for(const sup in userMap){
-    const t=userMap[sup].total;
-    const c=userMap[sup].completed;
-    const p=t? Math.round((c/t)*100):0;
-    userTable.innerHTML+=`<tr><td>${sl++}</td><td>${sup}</td><td class="hide-mobile">${deptFilter==='All'?'All':deptFilter}</td><td>${t}</td><td>${c}</td><td>${p}%</td></tr>`;
-  }
-  if(userTable.innerHTML==='') userTable.innerHTML='<tr><td colspan="6">No data</td></tr>';
 
-  // ---------------- Activity Execution ----------------
+  const userTable = document.getElementById('userPerformanceTable').querySelector('tbody');
+  userTable.innerHTML = '';
+  let sl = 1;
+  for(const sup in userMap){
+    const t = userMap[sup].total;
+    const c = userMap[sup].completed;
+    const p = t ? Math.round((c/t)*100) : 0;
+    userTable.innerHTML += `<tr><td>${sl++}</td><td>${sup}</td><td class="hide-mobile">${deptFilter==='All'?'All':deptFilter}</td><td>${t}</td><td>${c}</td><td>${p}%</td></tr>`;
+  }
+  if(!userTable.innerHTML) userTable.innerHTML = '<tr><td colspan="6">No data</td></tr>';
+
   const execTable = document.getElementById('activityExecutionTable').querySelector('tbody');
-  execTable.innerHTML='';
-  let sl2=1;
+  execTable.innerHTML = '';
+  let sl2 = 1;
   data.forEach(d=>{
-    let cls=''; if(d.status==='Completed') cls='completed'; else if(d.status==='Pending') cls='pending'; else cls='overdue';
-    execTable.innerHTML+=`<tr class="${cls}"><td>${sl2++}</td><td>${d.supervisor}</td><td class="hide-mobile">${d.department}</td><td>${d.activityName}</td><td>${d.date}</td><td>${d.status}</td></tr>`;
+    let cls = '';
+    if(d.status==='Completed') cls = 'completed';
+    else if(d.status==='Pending') cls = 'pending';
+    else cls = 'overdue';
+    execTable.innerHTML += `<tr class="${cls}"><td>${sl2++}</td><td>${d.supervisor || 'N/A'}</td><td class="hide-mobile">${d.department || 'N/A'}</td><td>${d.activityName || d.activity || 'N/A'}</td><td>${d.date || 'N/A'}</td><td>${d.status || 'N/A'}</td></tr>`;
   });
-  if(execTable.innerHTML==='') execTable.innerHTML='<tr><td colspan="6">No data</td></tr>';
+  if(!execTable.innerHTML) execTable.innerHTML = '<tr><td colspan="6">No data</td></tr>';
 }
 
-// ---------------- Tooltip Close ----------------
-document.getElementById('closeTooltip').addEventListener('click',()=>{ document.getElementById('tooltipModal').style.display='none'; });
-document.getElementById('applyFilterBtn').addEventListener('click',()=>{ loadDashboard(); });
+// ---------------- Event Listeners ----------------
+document.getElementById('closeTooltip').addEventListener('click', ()=>{ document.getElementById('tooltipModal').style.display='none'; });
+document.getElementById('applyFilterBtn').addEventListener('click', ()=>{ loadDashboard(); });
+
+// ---------------- Main PPT Download (filtered) ----------------
+document.getElementById('downloadPptBtn').onclick = async () => {
+  if (typeof generateMultiSlidePPT !== 'function') {
+    alert("Error: PPT generation function not found. Please check PptxGenJS and JSZip imports.");
+    return;
+  }
+
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const fromDate = document.getElementById('fromDate').value;
+  const toDate = document.getElementById('toDate').value;
+
+  let pptData = globalData.slice(); // full copy
+  if (deptFilter !== 'All') pptData = pptData.filter(d => d.department === deptFilter);
+  if (fromDate) pptData = pptData.filter(d => d.date >= fromDate);
+  if (toDate) pptData = pptData.filter(d => d.date <= toDate);
+
+  // apply logic: treat undefined activity OR photos as completed for the PPT selection relevance
+  pptData.forEach(d=>{
+    if(!d.status) d.status = '';
+    if(d.status !== 'Completed'){
+      if(!d.activityName || (d.photos && Array.isArray(d.photos) && d.photos.length > 0)){
+        d.status = 'Completed';
+      }
+    }
+  });
+
+  // only include items with photos
+  pptData = pptData.filter(d => d.photos && Array.isArray(d.photos) && d.photos.length > 0);
+
+  if(pptData.length === 0){ alert('No filtered activities with photos found to include in the PPT.'); return; }
+
+  try {
+    await generateMultiSlidePPT(pptData, `KPI_Activities_${new Date().toISOString().slice(0,10)}.pptx`);
+  } catch (error) {
+    console.error("PPT Generation Failed:", error);
+    alert('Failed to generate or download the PPT. Check the console for details.');
+  }
+};
+
+// ---------------- Toggle minimize/maximize execution KPIs ----------------
+document.getElementById('toggleExecution').addEventListener('click', ()=>{
+  const container = document.getElementById('executionContainer');
+  const icon = document.getElementById('toggleExecution');
+  if(container.style.display === 'none'){
+    container.style.display = 'block';
+    icon.textContent = '−';
+  } else {
+    container.style.display = 'none';
+    icon.textContent = '+';
+  }
+});
 
 // Initial load
 loadDashboard();
