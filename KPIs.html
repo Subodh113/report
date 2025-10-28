@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KPI Dashboard — Fixed</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<!-- Utilities -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/pptxgenjs@latest/dist/pptxgen.min.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root{--accent:#006666;--accent2:#009999;--bg:#f6f9fc}
+*{box-sizing:border-box}
+body{font-family:Poppins,system-ui,Arial;margin:0;background:var(--bg);color:#0f172a}
+header { background: linear-gradient(135deg,#006666,#009999); color:white; padding:18px 0; text-align:center; font-size:22px; font-weight:600; }
+main{max-width:1200px;margin:18px auto;padding:12px}
+
+
+
+
+/* Summary Cards */
+.summary-container { display:flex; flex-wrap:wrap; gap:15px; margin-bottom:20px; }
+.summary-card { flex:1; min-width:160px; padding:18px; border-radius:12px; cursor:pointer; text-align:center; color:#333; box-shadow:0 4px 12px rgba(0,0,0,0.05); transition:0.3s; }
+.summary-card:hover { box-shadow:0 6px 16px rgba(0,0,0,0.1); }
+
+/* Five cards in a row, equally sized; monthly card is full-width below */
+.summary-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 0px; /* remove for tighter space above monthly */
+}
+.summary-container .summary-card {
+  flex: 1 1 0;        /* stretch equally */
+  min-width: 140px;
+}
+.monthly-card {
+  width: 100%;
+  margin: 16px 0 0 0;
+  display: block;
+  font-size: 1rem;
+}
+/* Responsive: Stack all summary cards on mobile */
+@media (max-width: 900px) {
+  .summary-container {
+    flex-direction: column;
+  }
+  .summary-container .summary-card {
+    flex: 1 1 100%;
+    min-width: unset;
+  }
+  .monthly-card {
+    width: 100%;
+  }
+}
+
+/* Date filter */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input[type=date]{padding:8px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
+.btn{padding:8px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+.btn.secondary{background:var(--accent2)}
+.card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);margin-bottom:12px}
+
+/* Tables */
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; }
+th { background:#006666; color:white; text-transform:uppercase; font-size:13px; }
+tr:nth-child(even){ background:#f9f9f9; }
+tr.completed { background:#d4edda; }
+tr.pending { background:#fff3cd; }
+tr.overdue { background:#f8d7da; }
+
+.small{font-size:13px;color:#64748b}
+
+.toggle-icon{cursor:pointer;font-size:16px;background:var(--accent);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+
+.chart-wrap{height:260px}
+
+/* Responsive */
+@media(max-width:768px){
+  .summary-card{flex:1 1 100%;}
+  th,td{font-size:12px;}
+  .hide-mobile { display:none; }
+}
+
+.footer{margin-top:14px;text-align:center;color:#64748b;font-size:13px}
+
+#tooltipModal{display:none;position:fixed;inset:0;background:rgba(2,6,23,0.55);align-items:center;justify-content:center;z-index:1200}
+.tooltip-content{background:#fff;border-radius:10px;padding:14px;max-width:95%;max-height:86%;overflow:auto}
+.tooltip-close{float:right;background:var(--accent);color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
+
+
+</style>
+</head>
+<body>
+<header>KPI Dashboard</header>
+<main>
+
+<!-- Filters -->
+<section class="card filters">
+  <label><strong>Department:</strong>
+    <select id="departmentFilter">
+      <option value="All">All</option>
+      <option value="M&E">M&E</option>
+      <option value="HK">H&K</option>
+      <option value="Security">Security</option>
+      <option value="EHS">EHS</option>
+    </select>
+  </label>
+
+  <label>From: <input type="date" id="fromDate"></label>
+  <label>To: <input type="date" id="toDate"></label>
+
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <button id="applyFilterBtn" class="btn">Apply Filter</button>
+    <button id="downloadPptBtn" class="btn secondary">Download Filtered PPT</button>
+  </div>
+</section>
+
+<!-- Summary -->
+<!-- Summary -->
+<section class="summary-container" id="summaryCards">
+  <div class="summary-card" data-type="total" style="background:#eaf5f5;">
+    <h3>Total Activities</h3><p id="totalActivities">0</p>
+  </div>
+  <div class="summary-card" data-type="completed" style="background:#d4edda;">
+    <h3>Completed Activities</h3><p id="completedActivitiesCount">0</p>
+  </div>
+  <div class="summary-card" data-type="percent" style="background:#fff3cd;">
+    <h3>Completion %</h3><p id="completionPercent">0%</p>
+  </div>
+  <div class="summary-card" data-type="notCompleted" style="background:#f8d7da;">
+    <h3>Not Completed</h3><p id="notCompletedCount">0</p>
+  </div>
+  <div class="summary-card" data-type="weekly" style="background:#d0e1ff;">
+    <h3>This Week Completed</h3><p id="weeklyCount">0</p>
+  </div>
+  <!-- Row break for monthly card (see CSS, we’ll target this) -->
+</section>
+<!-- Monthly card should be outside of .summary-container for full width -->
+<div class="summary-card monthly-card" data-type="monthly" style="background:#ffd9d9; margin-bottom:24px;">
+  <h3>This Month Completed</h3><p id="monthlyCount">0</p>
+</div>
+
+<!-- Charts -->
+<div class="card">
+  <h3 style="margin:0 0 8px 0;color:var(--accent)">Department vs Activity Count</h3>
+  <div class="chart-wrap"><canvas id="deptGroupedChart"></canvas></div>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 8px 0;color:var(--accent)">Supervisor vs Activity Count</h3>
+  <div class="chart-wrap"><canvas id="supervisorBulletChart"></canvas></div>
+</div>
+
+
+
+<!-- Tables -->
+<div class="card">
+  <h3 style="display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;color:var(--accent)">
+    User Performance KPIs
+  </h3>
+  <table class="table" id="userPerformanceTable">
+    <thead><tr><th>SL</th><th>Supervisor</th><th class="hide-mobile">Department(s)</th><th>Total</th><th>Completed</th><th>Completion %</th></tr></thead>
+    <tbody><tr><td colspan="6">Loading...</td></tr></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;color:var(--accent)">
+    Activity Execution KPIs
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="downloadSelectedPpt" class="btn secondary" title="Download PPT for all completed with photos in current filter">Download Completed PPT</button>
+      <div id="toggleWrap" style="display:inline-flex;align-items:center">
+        <span id="toggleExecution" class="toggle-icon" title="Minimize / Maximize">−</span>
+      </div>
+    </div>
+  </h3>
+
+  <div id="executionContainer">
+    <table class="table" id="activityExecutionTable">
+      <thead><tr><th>SL</th><th>Supervisor</th><th class="hide-mobile">Department</th><th>Activity</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody><tr><td colspan="7">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">Created by Subodh Kumar</div>
+</main>
+
+<!-- Tooltip modal -->
+<div id="tooltipModal">
+  <div class="tooltip-content">
+    <button id="closeTooltip" class="tooltip-close">Close</button>
+    <h3 id="tooltipTitle">Details</h3>
+    <div style="margin:8px 0">
+      <button id="downloadExcel" class="btn">Download Excel</button>
+      <button id="downloadPptTooltipBtn" class="btn secondary" style="margin-left:8px">Download PPT (Completed)</button>
+    </div>
+    <div id="tooltipTableWrap"></div>
+  </div>
+</div>
+
+<script>
+/* ================= FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain: "facilitymanagement-47470.firebaseapp.com",
+  projectId: "facilitymanagement-47470",
+  storageBucket: "facilitymanagement-47470.firebasestorage.app",
+  messagingSenderId: "638809761503",
+  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+};
+if(!window.firebaseAppsInitialized){ firebase.initializeApp(firebaseConfig); window.firebaseAppsInitialized=true; }
+const db = firebase.firestore();
+
+/* ================= Globals ================= */
+let globalData = [];           // full dataset from Firestore
+let currentFiltered = [];      // dataset after filters
+let supervisorBulletChart = null;
+let deptGroupedChart = null;
+
+/* ================= Helpers ================= */
+function parseDateComparable(d){
+  if(!d) return null;
+  // Commonly stored as YYYY-MM-DD or ISO. Try Date.
+  const dt = new Date(d);
+  if(!isNaN(dt)) return dt;
+  // Try replacing - with / (some browsers)
+  const dt2 = new Date(String(d).replace(/-/g,'/'));
+  return isNaN(dt2) ? null : dt2;
+}
+
+async function getImageBase64(url){
+  if(!url) return null;
+  if(typeof url !== 'string') return null;
+  if(!url.startsWith('http')) return url; // might already be base64
+  try{
+    const resp = await fetch(url, {mode:'cors'});
+    if(!resp.ok) return null;
+    const blob = await resp.blob();
+    return await new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onloadend = ()=>resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsDataURL(blob);
+    });
+  }catch(e){
+    console.warn('getImageBase64 failed', e);
+    return null;
+  }
+}
+
+/* ================= PPT generation (multi-slide format similar to your reference) ================= */
+async function getImageBase64(url) {
+  if (!url) return null;
+  // If already a data URL or not http (e.g., base64 stored) return as-is
+  if (!url.startsWith('http')) return url;
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error('getImageBase64 failed:', err);
+    return null;
+  }
+}
+
+async function generateMultiSlidePPT(records, filename) {
+  if (!records || !records.length) {
+    alert('No records found');
+    return;
+  }
+  if (typeof PptxGenJS === 'undefined' || typeof JSZip === 'undefined') {
+    console.error("PPT Libraries (PptxGenJS or JSZip) not loaded.");
+    throw new Error("PPT Libraries not loaded.");
+  }
+
+  const pptx = new PptxGenJS();
+  const slideW = pptx.width || 10;
+  const slideH = pptx.height || 5.63;
+
+  const companyLogoURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyTCMtrLBcJmjce2b8m4G-bWzxVYfwpG1JdA&usqp=CAU";
+  const headerColor = '014d4d';
+  const dottedColor = '014d4d';
+
+  let logoData = null;
+  try { logoData = await getImageBase64(companyLogoURL); } catch (e) { console.warn('Logo load failed', e); }
+
+  for (const rec of records) {
+    const slide = pptx.addSlide();
+    const activityTitle = rec.activityName || rec.activity || "Untitled Activity";
+
+    slide.background = {
+      type: 'pattern',
+      pattern: 'pct5',
+      fgColor: dottedColor,
+      bgColor: 'FFFFFF',
+    };
+
+    slide.addShape(pptx.shapes.RECTANGLE, {
+      x: 0, y: 0, w: '100%', h: 0.7, fill: { color: headerColor },
+    });
+
+    const supervisorName = rec.supervisor ? `Supervisor: ${rec.supervisor}` : 'Supervisor: N/A';
+    slide.addText(supervisorName, { x: 0.3, y: 0.2, fontSize: 10, color: 'FFFFFF', bold: true });
+
+    if (logoData) {
+      slide.addImage({ data: logoData, x: slideW - 1.8, y: 0.1, w: 1.3, h: 0.5 });
+    }
+
+    slide.addText(activityTitle, { x: 2.5, y: 0.2, w: 5, fontSize: 16, bold: true, color: 'FFFFFF', align: 'center' });
+
+    const photos = rec.photos || [];
+    const count = photos.length;
+    if (!count) continue;
+
+    const cols = Math.min(3, count);
+    const rows = Math.ceil(count / cols);
+
+    const gap = 0.18;
+    const availableHeight = slideH - 1.1;
+    const availableWidth = slideW - 0.6;
+
+    const imgW = Math.min(3, (availableWidth - (cols - 1) * gap) / cols);
+    const imgH = Math.min(2, (availableHeight - (rows - 1) * gap) / rows);
+
+    const totalGridW = cols * imgW + (cols - 1) * gap;
+    const totalGridH = rows * imgH + (rows - 1) * gap;
+    const marginX = (slideW - totalGridW) / 2;
+    const marginY = (slideH - totalGridH) / 2 + 0.2;
+
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const x = marginX + c * (imgW + gap);
+      const y = marginY + r * (imgH + gap);
+
+      try {
+        const photoUrl = photos[i].url || photos[i];
+        const imgData = await getImageBase64(photoUrl);
+        if (imgData) slide.addImage({ data: imgData, x, y, w: imgW, h: imgH });
+      } catch (err) {
+        console.error('Image load/placement error:', err);
+      }
+    }
+  }
+
+  await pptx.writeFile({ fileName: filename || `EHS_${new Date().toISOString().slice(0, 10)}.pptx` });
+}
+
+/* ================= Chart helpers ================= */
+function drawCompletionDoughnut(completed, notCompleted){
+  // not used directly here, but kept if needed
+}
+
+/* Supervisor bullet chart: horizontal stacked bar (completed + remaining) + percent labels */
+function drawSupervisorBullet(records){
+  const map = {};
+  records.forEach(r=>{
+    const s = r.supervisor || 'Unknown';
+    if(!map[s]) map[s] = { total:0, completed:0 };
+    map[s].total++;
+    if(r.status === 'Completed') map[s].completed++;
+  });
+  const labels = Object.keys(map);
+  const completed = labels.map(l=>map[l].completed);
+  const remaining = labels.map((l,i)=>map[l].total - map[l].completed);
+
+  const ctx = document.getElementById('supervisorBulletChart').getContext('2d');
+  if(supervisorBulletChart) supervisorBulletChart.destroy();
+  supervisorBulletChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Completed', data: completed, backgroundColor:'#0ea5a0' },
+        { label:'Remaining', data: remaining, backgroundColor:'#e6eef6' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display:false },
+        tooltip: { mode:'index' },
+        // custom percent labels using afterDatasetsDraw is no longer in Chart.js 4 plugin hooks,
+        // implement with a small plugin:
+        afterDraw: chart => {
+          const ctx = chart.ctx;
+          chart.data.datasets[0].data.forEach((val, i) => {
+            const total = val + (chart.data.datasets[1].data[i]||0);
+            const percent = total ? Math.round((val/total)*100) : 0;
+            const meta = chart.getDatasetMeta(0);
+            const bar = meta.data[i];
+            if(!bar) return;
+            // compute text position: right to the completed segment
+            const x = bar.x + 6;
+            const y = bar.y + bar.height/2;
+            ctx.save();
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${val} (${percent}%)`, x, y);
+            ctx.restore();
+          });
+        }
+      },
+      scales: {
+        x: { beginAtZero:true, max: Math.max(...labels.map(l => map[l].total), 5) }
+      }
+    }
+  });
+}
+
+function drawDeptGroupedChart(records){
+  const map = {};
+  records.forEach(r=>{
+    const dept = r.department || 'Unknown';
+    if(!map[dept]) map[dept] = { total:0, completed:0 };
+    map[dept].total++;
+    if(r.status === 'Completed') map[dept].completed++;
+  });
+  const labels = Object.keys(map);
+  const completed = labels.map(l=>map[l].completed);
+  const notCompleted = labels.map(l=>map[l].total - map[l].completed);
+
+  const ctx = document.getElementById('deptGroupedChart').getContext('2d');
+  if(deptGroupedChart) deptGroupedChart.destroy();
+  deptGroupedChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Completed', data: completed, backgroundColor:'#16a34a' },
+        { label:'Not Completed', data: notCompleted, backgroundColor:'#ef4444' }
+      ]
+    },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins: { legend:{position:'bottom'} },
+      scales: { y:{ beginAtZero:true } }
+    }
+  });
+}
+
+/* ================= Tooltip & Excel helpers ================= */
+function openTooltipWithRecords(title, records){
+  const wrap = document.getElementById('tooltipTableWrap');
+  document.getElementById('tooltipTitle').textContent = title || 'Details';
+  if(!records.length) wrap.innerHTML = '<p class="small">No records</p>';
+  else{
+    let html = '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#006666;color:#fff"><th>SL</th><th>Date</th><th>Dept</th><th>Activity</th><th>Supervisor</th><th>Status</th></tr></thead><tbody>';
+    records.forEach((r,i)=>{
+      const st = r.status || 'N/A';
+      html += `<tr style="background:${st==='Completed'?'#e6ffef':st==='Pending'?'#fff7e6':'#ffe6e6'}"><td>${i+1}</td><td>${r.date||'N/A'}</td><td>${r.department||'N/A'}</td><td>${(r.activityName||r.activity)||'N/A'}</td><td>${r.supervisor||'N/A'}</td><td>${st}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+  // Excel button
+  document.getElementById('downloadExcel').onclick = ()=>{
+    try{
+      const tableEl = document.querySelector('#tooltipTableWrap table');
+      if(!tableEl){ alert('No table to export'); return; }
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.table_to_sheet(tableEl);
+      XLSX.utils.book_append_sheet(wb, ws, 'Details');
+      XLSX.writeFile(wb, `details_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }catch(e){
+      console.error(e);
+      alert('Excel generation failed');
+    }
+  };
+  // PPT for completed only
+  document.getElementById('downloadPptTooltipBtn').onclick = async ()=>{
+    const pptData = records.filter(r=>r.status==='Completed' && Array.isArray(r.photos) && r.photos.length>0);
+    if(!pptData.length){ alert('No completed records with photos to include'); return; }
+    await generateMultiSlidePPT(pptData, `Completed_Activities_${new Date().toISOString().slice(0,10)}.pptx`);
+  };
+  document.getElementById('tooltipModal').style.display = 'flex';
+}
+document.getElementById('closeTooltip').addEventListener('click', ()=>{ document.getElementById('tooltipModal').style.display='none'; });
+
+/* ================= Core: loadDashboard ================= */
+async function loadDashboard(){
+  try{
+    const deptFilter = document.getElementById('departmentFilter').value;
+    const fromDateVal = document.getElementById('fromDate').value;
+    const toDateVal = document.getElementById('toDate').value;
+    const fromDate = fromDateVal ? new Date(fromDateVal + 'T00:00:00') : null;
+    const toDate = toDateVal ? new Date(toDateVal + 'T23:59:59') : null;
+
+    const snap = await db.collection('submissions').orderBy('timestamp','desc').get();
+    let data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    globalData = data.slice();
+
+    let filtered = data.slice();
+    if(deptFilter !== 'All') filtered = filtered.filter(r => (r.department||'') === deptFilter);
+    if(fromDate) filtered = filtered.filter(r => { const dt = parseDateComparable(r.date); return dt ? dt >= fromDate : false; });
+    if(toDate) filtered = filtered.filter(r => { const dt = parseDateComparable(r.date); return dt ? dt <= toDate : false; });
+
+    // normalization: treat missing activity OR having photos as Completed
+    filtered.forEach(r=>{
+      if(!r.status) r.status = '';
+      if(r.status !== 'Completed'){
+        if(!r.activityName || (Array.isArray(r.photos) && r.photos.length>0)) r.status = 'Completed';
+      }
+    });
+
+    currentFiltered = filtered.slice();
+
+    // After setting % and notCompletedCount, insert this:
+const now = new Date();
+const firstDayOfWeek = new Date(now);
+// Default: week starts Sunday. For Monday, use now.getDay() - 1, but let's match your earlier code
+firstDayOfWeek.setDate(now.getDate() - now.getDay());
+firstDayOfWeek.setHours(0,0,0,0);
+
+const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+// Calculate completed this week
+const completedThisWeek = filtered.filter(r => {
+  if(r.status !== 'Completed') return false;
+  const dt = parseDateComparable(r.date);
+  return dt && dt >= firstDayOfWeek && dt <= now;
+}).length;
+
+// Calculate completed this month
+const completedThisMonth = filtered.filter(r => {
+  if(r.status !== 'Completed') return false;
+  const dt = parseDateComparable(r.date);
+  return dt && dt >= firstDayOfMonth && dt <= now;
+}).length;
+
+document.getElementById('weeklyCount').textContent = completedThisWeek;
+document.getElementById('monthlyCount').textContent = completedThisMonth;
+
+    // Summary cards
+    const total = filtered.length;
+    const completed = filtered.filter(r=>r.status==='Completed').length;
+    const notCompleted = total - completed;
+    const percent = total ? Math.round((completed/total)*100) : 0;
+    document.getElementById('totalActivities').textContent = total;
+    document.getElementById('completedActivitiesCount').textContent = completed;
+    document.getElementById('notCompletedCount').textContent = notCompleted;
+    document.getElementById('completionPercent').textContent = percent + '%';
+    
+ 
+
+    // Summary-card click handlers (open tooltip)
+   document.querySelectorAll('.summary-card').forEach(card=>{
+  card.onclick = ()=>{
+    const type = card.getAttribute('data-type');
+    let recs = [];
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setHours(0,0,0,0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    if(type === 'total') recs = filtered;
+    else if(type === 'completed') recs = filtered.filter(r => r.status==='Completed');
+    else if(type === 'notCompleted') recs = filtered.filter(r => r.status!=='Completed');
+    else if(type === 'percent') recs = filtered;
+    else if(type === 'weekly')
+      recs = filtered.filter(r => {
+        if(r.status !== 'Completed') return false;
+        const dt = parseDateComparable(r.date);
+        return dt && dt >= weekStart && dt <= today;
+      });
+    else if(type === 'monthly')
+      recs = filtered.filter(r => {
+        if(r.status !== 'Completed') return false;
+        const dt = parseDateComparable(r.date);
+        return dt && dt >= monthStart && dt <= today;
+      });
+    openTooltipWithRecords(card.querySelector('h3').textContent, recs);
+  };
+});
+
+    // User performance table
+       // User performance table
+    const userMap = {};
+    filtered.forEach(r=>{
+      const s = r.supervisor || 'Unknown';
+      if(!userMap[s]) userMap[s] = { total:0, completed:0, depts: new Set() };
+      userMap[s].total++; if(r.status==='Completed') userMap[s].completed++;
+      if(r.department) userMap[s].depts.add(r.department);
+    });
+    const userBody = document.querySelector('#userPerformanceTable tbody');
+    userBody.innerHTML = '';
+    let idx = 1;
+    for(const s in userMap){
+      const u = userMap[s];
+      const p = u.total ? Math.round((u.completed/u.total)*100) : 0;
+      userBody.insertAdjacentHTML('beforeend', `<tr><td>${idx++}</td><td>${s}</td><td class="hide-mobile">${Array.from(u.depts).join(', ')||'N/A'}</td><td>${u.total}</td><td>${u.completed}</td><td>${p}%</td></tr>`);
+    }
+    if(userBody.children.length === 0) userBody.innerHTML = '<tr><td colspan="6">No data</td></tr>';
+
+    // Activity execution table with Action button for per-activity PPT
+    const execBody = document.querySelector('#activityExecutionTable tbody');
+    execBody.innerHTML = '';
+    let sidx = 1;
+    filtered.forEach(r=>{
+      const st = r.status || 'N/A';
+      const cls = st==='Completed' ? 'completed' : st==='Pending' ? 'pending' : 'overdue';
+      const act = r.activityName || r.activity || 'N/A';
+      let action = '';
+      if(r.status === 'Completed' && Array.isArray(r.photos) && r.photos.length > 0){
+        action = `<button class="btn secondary single-ppt-btn" data-id="${r.id}">Download PPT</button>`;
+      } else {
+        action = `<span class="small">${(r.photos && r.photos.length)?'Photos':'No Photos'}</span>`;
+      }
+      execBody.insertAdjacentHTML('beforeend', `<tr class="${cls}"><td>${sidx++}</td><td>${r.supervisor||'N/A'}</td><td class="hide-mobile">${r.department||'N/A'}</td><td>${act}</td><td>${r.date||'N/A'}</td><td>${st}</td><td>${action}</td></tr>`);
+    });
+    if(execBody.children.length === 0) execBody.innerHTML = '<tr><td colspan="7">No data</td></tr>';
+
+    // Delegated handler for per-activity PPT buttons
+    document.getElementById('activityExecutionTable').onclick = function(e){
+      const btn = e.target.closest('.single-ppt-btn');
+      if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      const rec = globalData.find(x=>x.id===id);
+      if(!rec){ alert('Record not found'); return; }
+      generateMultiSlidePPT([rec], `${(rec.activityName||rec.activity||'activity').replace(/[\\\/:*?"<>|]/g,'_')}_${new Date().toISOString().slice(0,10)}.pptx`);
+    };
+
+    // Charts
+    drawSupervisorBullet(filtered);
+    drawDeptGroupedChart(filtered);
+
+  }catch(err){
+    console.error('loadDashboard error', err);
+    alert('Failed to load dashboard — check console for details.');
+  }
+}
+
+/* ================= Download filtered PPT (all completed with photos) ================= */
+document.getElementById('downloadSelectedPpt').addEventListener('click', async ()=>{
+  const items = currentFiltered.filter(r => r.status === 'Completed' && Array.isArray(r.photos) && r.photos.length > 0);
+  if(!items.length){ alert('No completed activities with photos for current filter.'); return; }
+  await generateMultiSlidePPT(items, `KPI_Completed_${new Date().toISOString().slice(0,10)}.pptx`);
+});
+document.getElementById('downloadPptBtn').addEventListener('click', async ()=>{
+  const items = currentFiltered.filter(r => r.status === 'Completed' && Array.isArray(r.photos) && r.photos.length > 0);
+  if(!items.length){ alert('No completed activities with photos for current filter.'); return; }
+  await generateMultiSlidePPT(items, `KPI_Completed_${new Date().toISOString().slice(0,10)}.pptx`);
+});
+
+/* ================= Toggle: hide table but keep icon visible ================= */
+document.getElementById('toggleExecution').addEventListener('click', ()=>{
+  const container = document.getElementById('executionContainer');
+  const icon = document.getElementById('toggleExecution');
+  if(container.style.display === 'none'){ container.style.display = ''; icon.textContent = '−'; }
+  else{ container.style.display = 'none'; icon.textContent = '+'; }
+});
+
+/* ================= Summary-card tooltip handlers done inside loadDashboard (so they match filtered data) ================= */
+
+/* ================= Filters and initial load ================= */
+document.getElementById('applyFilterBtn').addEventListener('click', ()=>{ loadDashboard(); });
+
+/* redraw charts on resize for responsiveness */
+let resizeTimer = null;
+window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>{ if(currentFiltered){ drawSupervisorBullet(currentFiltered); drawDeptGroupedChart(currentFiltered);} }, 200); });
+
+/* initial */
+loadDashboard();
+</script>
+</body>
+</html>
+
+    
