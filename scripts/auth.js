@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!email || !pass) { loginMsg.textContent = 'Enter email & password'; return; }
     try {
       await auth.signInWithEmailAndPassword(email, pass);
-      if (adminEmails.includes(email)) window.location.href = 'admin.html'; else window.location.href = 'supervisor.html';
+      if (adminEmails.includes(email)) window.location.href = 'kpi.html'; else window.location.href = 'supervisor.html';
     } catch (err) { console.error(err); loginMsg.textContent = err.message || 'Login failed'; }
   });
 
