@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Supervisor Dashboard</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0ea5a4">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-work.js')
+    .then(() => console.log('Service Worker registered!'))
+    .catch(err => console.error('Service Worker failed:', err));
+}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  background: #f6f9fc;
+  padding-bottom: 70px;
+}
+header {
+  background: linear-gradient(135deg,#006666,#009999);
+  color: white;
+  text-align: center;
+  padding: 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+main {
+  padding: 20px;
+  text-align: center;
+}
+.card {
+  background: white;
+  padding: 20px;
+  margin: 10px auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  max-width: 400px;
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  border-top: 1px solid #eee;
+  z-index: 999;
+  padding: 6px 0;
+}
+.bottom-nav button {
+  background: none;
+  border: none;
+  text-align: center;
+  color: #555;
+  flex: 1;
+}
+.bottom-nav button.active {
+  color: #006666;
+  font-weight: 600;
+}
+.bottom-nav i {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 2px;
+}
+.bottom-nav span {
+  font-size: 12px;
+}
+
+/* QR Popup */
+#qrOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: white;
+}
+#reader {
+  width: 90%;
+  max-width: 350px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.close-btn {
+  background: #ff4444;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+.close-btn:hover { background: #e53935; }
+</style>
+</head>
+<body>
+
+<header>Supervisor Dashboard</header>
+
+<main>
+  <div class="card">
+    <h2>Welcome Supervisor 👋</h2>
+    <p>Use the menu below to manage your daily activities, issue materials, and scan checklists.</p>
+  </div>
+</main>
+
+<!-- QR SCANNER POPUP -->
+<div id="qrOverlay">
+  <div id="reader"></div>
+  <button class="close-btn" onclick="closeQR()">Close</button>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+  <button class="active" onclick="window.location.href='dashboard.html'">
+    <i class="fa-solid fa-house"></i><span>Home</span>
+  </button>
+  <button onclick="window.location.href='supervisor-dashboard.html'">
+    <i class="fa-solid fa-list-check"></i><span>Activities</span>
+  </button>
+  <button onclick="window.location.href='supervisor-inventory.html'">
+    <i class="fa-solid fa-boxes-stacked"></i><span>Inventory</span>
+  </button>
+  <button id="scanBtn">
+    <i class="fa-solid fa-qrcode"></i><span>Scan</span>
+  </button>
+</div>
+
+<!-- QR Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+<script>
+let html5QrCode;
+const overlay = document.getElementById("qrOverlay");
+const scanBtn = document.getElementById("scanBtn");
+
+scanBtn.addEventListener("click", () => {
+  openQR();
+});
+
+async function openQR() {
+  overlay.style.display = "flex";
+  if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+  try {
+    const cameras = await Html5Qrcode.getCameras();
+    if (cameras && cameras.length) {
+      const camId = cameras[0].id;
+      await html5QrCode.start(
+        camId,
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        qrCodeSuccess
+      );
+    } else {
+      alert("No camera found on this device.");
+      closeQR();
+    }
+  } catch (e) {
+    alert("Camera access denied or unsupported.\nPlease allow camera permission and ensure HTTPS.");
+    closeQR();
+  }
+}
+
+function qrCodeSuccess(decodedText) {
+  html5QrCode.stop().then(() => {
+    overlay.style.display = "none";
+    if (decodedText.startsWith("http")) {
+      window.location.href = decodedText;
+    } else {
+      alert("QR Scanned: " + decodedText);
+    }
+  });
+}
+
+function closeQR() {
+  overlay.style.display = "none";
+  if (html5QrCode) html5QrCode.stop().catch(() => {});
+}
+</script>
+</body>
+</html>
