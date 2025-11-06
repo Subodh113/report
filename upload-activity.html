@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (activityId) {
-        await db.collection('activities').doc(activityId).update({
+        await db.collection('activitySchedules').doc(activityId).update({
           status: 'Completed',
           completedBy: supName,
           completedDate: firebase.firestore.FieldValue.serverTimestamp()
