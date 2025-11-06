@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('supervisorName', supervisorName);
 
       console.log("Signup successful:", email, "Department:", department);
-      window.location.href = department ? 'supervisor-dashboard.html' : 'admin.html';
+      window.location.href = department ? 'supervisor-dashboard.html' : 'kpi.html';
     } catch (err) {
       console.error(err);
       loginMsg.textContent = err.message || 'Signup failed';
