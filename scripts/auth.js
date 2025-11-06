@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('role', 'admin');
         localStorage.setItem('supervisorName', 'Admin');
         console.log("Admin login:", email);
-        window.location.href = 'admin.html';
+        window.location.href = 'kpi.html';
       }
     } catch (err) {
       console.error(err);
