@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supervisor Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+body { font-family:'Poppins', sans-serif; margin:0; background:#f6f9fc; }
+header { background: linear-gradient(135deg,#006666,#009999); color:white; padding:18px 0; text-align:center; font-size:22px; font-weight:600; }
+main { max-width: 1000px; margin:20px auto; padding:0 15px 80px; } /* added bottom padding */
+h2 { color:#006666; margin-bottom:10px; }
+.card { background:white; padding:15px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:20px; }
+table { width:100%; border-collapse:collapse; border-radius:8px; overflow:hidden; }
+th, td { padding:12px; text-align:left; border-bottom:1px solid #eee; }
+th { background:#006666; color:white; text-transform:uppercase; }
+tr:nth-child(even){background:#f9f9f9;}
+.status-completed { color:green; font-weight:600; }
+.status-pending { color:red; font-weight:600; }
+button.action-btn { background:#006666; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+button.action-btn:hover { background:#009999; }
+select { padding:6px 10px; border-radius:6px; border:1px solid #ccc; margin-bottom:10px; }
+@media(max-width:768px){ th,td{font-size:13px;} button.action-btn{padding:4px 8px;} }
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  border-top: 1px solid #eee;
+  z-index: 999;
+  padding: 6px 0;
+}
+.bottom-nav button {
+  background: none;
+  border: none;
+  text-align: center;
+  color: #555;
+  flex: 1;
+}
+.bottom-nav button.active {
+  color: #006666;
+  font-weight: 600;
+}
+.bottom-nav i {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 2px;
+}
+.bottom-nav span {
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+
+<header>Supervisor Dashboard</header>
+<main>
+
+<section class="card">
+<label>Select Department:</label>
+<select id="departmentFilter">
+  <option value="">All Departments</option>
+  <option value="M&E">M&E</option>
+  <option value="H&K">H&K</option>
+  <option value="Security">Security</option>
+  <option value="EHS">EHS</option>
+</select>
+</section>
+
+<section class="card">
+<h2>Today's Assigned Activities</h2>
+<table>
+<thead>
+<tr>
+<th>SL</th>
+<th>Activity</th>
+<th>Frequency</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="assignedActivities"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+</section>
+
+<section class="card">
+<h2>Completed Activities (Last 7 Days)</h2>
+<table>
+<thead>
+<tr>
+<th>SL</th>
+<th>Date</th>
+<th>Activity</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="completedActivities"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+</section>
+
+<section class="card">
+<h2>Next 7 Days Schedule</h2>
+<table>
+<thead>
+<tr><th>SL</th><th>Date</th><th>Activity</th><th>Action</th></tr>
+</thead>
+<tbody id="weekSchedule"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+</section>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain: "facilitymanagement-47470.firebaseapp.com",
+  projectId: "facilitymanagement-47470",
+  storageBucket: "facilitymanagement-47470.firebasestorage.app",
+  messagingSenderId: "638809761503",
+  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+};
+if (!window.firebaseAppsInitialized) {
+  firebase.initializeApp(firebaseConfig);
+  window.firebaseAppsInitialized = true;
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let supervisorEmail = '';
+let supervisorDept = '';
+
+auth.onAuthStateChanged(async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  supervisorEmail = user.email;
+  const deptSelect = document.getElementById('departmentFilter');
+  const emailToDeptMap = {
+    'me@jll.com': 'M&E',
+    'hk@jll.com': 'H&K',
+    'security@jll.com': 'Security',
+    'ehs@jll.com': 'EHS'
+  };
+  supervisorDept = emailToDeptMap[supervisorEmail] || '';
+  if (supervisorDept) deptSelect.value = supervisorDept;
+
+  await loadAssignedActivities();
+  await loadCompletedActivities();
+  await loadWeekSchedule();
+});
+
+// -------------------- Today's Assigned Activities --------------------
+async function loadAssignedActivities() {
+  const tbody = document.getElementById('assignedActivities');
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const snapshot = await db.collection('activitySchedules').orderBy('createdAt', 'desc').get();
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const todayDay = dayNames[today.getDay()];
+
+  tbody.innerHTML = '';
+  let sl = 1;
+
+  for (const doc of snapshot.docs) {
+    const s = doc.data();
+    if (deptFilter && s.department !== deptFilter) continue;
+
+    const completedSnapshot = await db.collection('submissions')
+      .where('department','==', s.department)
+      .where('activityName','==', s.activityName)
+      .where('date','==', todayStr)
+      .where('status','==','Completed')
+      .get();
+    if (!completedSnapshot.empty) continue;
+
+    let show = false;
+    if (s.frequency === 'Daily') show = true;
+    else if (s.frequency === 'Weekly' && s.recurringDays?.includes(todayDay)) show = true;
+    else if ((s.frequency === 'Monthly' || s.frequency === 'Quarterly') && s.nextDate) {
+      const d = new Date(s.nextDate);
+      show = d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+    }
+
+    if (show) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${sl++}</td>
+        <td>${s.activityName}</td>
+        <td>${s.frequency}</td>
+        <td><button class="action-btn" onclick="openUpload('${encodeURIComponent(s.department)}','${encodeURIComponent(s.activityName)}','${doc.id}')">Upload</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  if (tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4">No activities today</td></tr>';
+}
+
+// -------------------- Completed Activities (Last 7 Days) --------------------
+async function loadCompletedActivities() {
+  const tbody = document.getElementById('completedActivities');
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const snapshot = await db.collection('submissions').orderBy('timestamp','desc').get();
+
+  const today = new Date();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 7);
+
+  tbody.innerHTML = '';
+  let sl = 1;
+
+  snapshot.docs.forEach(doc => {
+    const s = doc.data();
+    if (deptFilter && s.department !== deptFilter) return;
+    if (s.status !== 'Completed') return;
+
+    const completedDate = new Date(s.date);
+    if (completedDate < sevenDaysAgo) return; // ✅ Only last 7 days
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${sl++}</td>
+      <td>${s.date}</td>
+      <td>${s.activityName}</td>
+      <td class="status-completed">Completed</td>`;
+    tbody.appendChild(tr);
+  });
+
+  if (tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4">No completed activities in last 7 days</td></tr>';
+}
+
+// -------------------- Next 7 Days Schedule (with Upload Button) --------------------
+async function loadWeekSchedule() {
+  const tbody = document.getElementById('weekSchedule');
+  const deptFilter = document.getElementById('departmentFilter').value;
+  const snapshot = await db.collection('activitySchedules').orderBy('createdAt','desc').get();
+
+  const today = new Date();
+  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const scheduleList = [];
+
+  snapshot.docs.forEach(doc => {
+    const s = doc.data();
+    if (deptFilter && s.department !== deptFilter) return;
+
+    for (let i=0;i<7;i++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate()+i);
+      const dayName = dayNames[currentDate.getDay()];
+      let show = false;
+
+      if (s.frequency === 'Daily') show = true;
+      else if (s.frequency === 'Weekly' && s.recurringDays?.includes(dayName)) show = true;
+      else if ((s.frequency === 'Monthly' || s.frequency === 'Quarterly') && s.nextDate) {
+        const d = new Date(s.nextDate);
+        show = d.getDate() === currentDate.getDate() && d.getMonth() === currentDate.getMonth();
+      }
+
+      if (show) {
+        scheduleList.push({
+          id: doc.id,
+          department: s.department,
+          date: currentDate.toISOString().split('T')[0],
+          activityName: s.activityName
+        });
+      }
+    }
+  });
+
+  tbody.innerHTML = '';
+  if (scheduleList.length === 0)
+    tbody.innerHTML = '<tr><td colspan="4">No scheduled activities in next 7 days</td></tr>';
+  else {
+    scheduleList.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index+1}</td>
+        <td>${item.date}</td>
+        <td>${item.activityName}</td>
+        <td><button class="action-btn" onclick="openUpload('${encodeURIComponent(item.department)}','${encodeURIComponent(item.activityName)}','${item.id}','${item.date}')">Upload</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+// -------------------- Open Upload --------------------
+function openUpload(department, activityName, id, date='') {
+  const today = date || new Date().toISOString().split('T')[0];
+  window.location.href = `upload-activity.html?department=${department}&activity=${activityName}&id=${id}&date=${today}`;
+}
+
+// -------------------- Department Filter --------------------
+document.getElementById('departmentFilter').addEventListener('change', async () => {
+  await loadAssignedActivities();
+  await loadCompletedActivities();
+  await loadWeekSchedule();
+});
+</script>
+</main>
+
+<div class="bottom-nav">
+  <button onclick="window.location.href='dashboard.html'">
+    <i class="fa-solid fa-house"></i><span>Home</span>
+  </button>
+  <button onclick="window.location.href='supervisor-dashboard.html'">
+    <i class="fa-solid fa-list-check"></i><span>Activities</span>
+  </button>
+  <button class="active" onclick="window.location.href='supervisor-inventory.html'">
+    <i class="fa-solid fa-boxes-stacked"></i><span>Inventory</span>
+  </button>
+</div>
+
+</body>
+</html>
