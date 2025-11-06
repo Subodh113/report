@@ -3,36 +3,170 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EHS Cleaning — Login</title>
-  <link rel="stylesheet" href="styles/main.css">
-  <!-- Firebase compat SDKs -->
+  <title>Facility Login</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0ea5a4" />
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-
   <script src="scripts/firebase-config.js"></script>
   <script src="scripts/auth.js" defer></script>
+
+  <style>
+    :root {
+      --accent: #0ea5a4;
+      --bg: #f0fdfc;
+      --text: #1e293b;
+      --muted: #64748b;
+      --error: #ef4444;
+      --radius: 16px;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+    body {
+      background: var(--bg);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.5s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 0.25rem;
+      color: var(--accent);
+    }
+    p.muted {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: block;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    button.btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button.btn:hover {
+      background: #0d9488;
+    }
+    #installBtn {
+      margin-top: 10px;
+      background: white;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+    #loginMsg {
+      text-align: center;
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--error);
+    }
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 500px) {
+      body { padding: 1rem; }
+      .card { padding: 1.5rem; }
+    }
+  </style>
 </head>
 <body>
-  <main class="card center">
-    <h1>EHS Cleaning — Login</h1>
-    <p class="muted">Sign in with your email and password (Firebase)</p>
+  <main class="card">
+    <h1>🔐Login</h1>
+    <p class="muted">facility management secure access</p>
 
     <div class="form">
       <label>Email</label>
-      <input id="email" type="email" placeholder="supervisor@example.com" />
+      <input id="email" type="email" placeholder="example@jll.com" />
       <label>Password</label>
-      <input id="password" type="password" placeholder="password" />
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
-        <button id="loginBtn" class="btn">Sign in</button>
-        <button id="signupBtn" class="btn secondary">Sign up (supervisors)</button>
-      </div>
-      <div id="loginMsg" class="small muted" style="margin-top:8px"></div>
+      <input id="password" type="password" placeholder="Enter password" />
+
+      <button id="loginBtn" class="btn">Sign In</button>
+      <button id="installBtn" class="btn" style="display:none;">📲 Install App</button>
+      <div id="loginMsg"></div>
     </div>
 
-    <hr>
-    <p class="small muted">Admin account to create in Firebase: <code>admin@ifm.com</code></p>
+    <footer>
+      Admin can create supervisor accounts<br>
+      © 2025 Facility management
+    </footer>
   </main>
+
+  <script>
+    // PWA install handler
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      installBtn.style.display = 'none';
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA installed');
+      installBtn.style.display = 'none';
+    });
+  </script>
 </body>
 </html>
