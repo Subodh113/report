@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Activity</title>
+<link rel="stylesheet" href="styles/main.css">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<!-- Cloudinary + Compression -->
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+<!-- Config -->
+<script src="scripts/firebase-config.js"></script>
+<script src="scripts/cloudinary-config.js"></script>
+
+<style>
+body { font-family:'Poppins',sans-serif; margin:0; background:#f6f9fc; color:#333; }
+header { background:#006666; color:white; padding:15px; text-align:center; font-size:22px; font-weight:600; }
+main { max-width:700px; margin:20px auto; padding:15px; }
+.card { background:white; padding:20px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+label { display:block; margin-top:10px; font-weight:500; color:#333; }
+input, select, textarea { width:100%; padding:10px; margin-top:4px; border-radius:6px; border:1px solid #ccc; font-size:14px; color:#333; }
+textarea { resize:none; height:80px; }
+button { background:#006666; color:white; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; margin-top:12px; font-size:15px; transition: background 0.3s, transform 0.2s; }
+button:hover { background:#009999; transform: scale(1.03); }
+.photo-preview { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.photo-container { position:relative; display:inline-block; }
+.photo-preview img { width:100px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; }
+.photo-container .delete-btn {
+  position:absolute;
+  top:2px; right:2px;
+  background: rgba(255,255,255,0.8);
+  color:red;
+  border:none;
+  border-radius:50%;
+  width:18px; height:18px;
+  cursor:pointer;
+  font-size:14px; line-height:18px;
+  text-align:center; font-weight:bold;
+}
+#progressContainer { width:100%; background:#eee; border-radius:6px; overflow:hidden; margin-top:10px; display:none; }
+#progressBar { height:16px; width:0%; background:#006666; text-align:center; color:white; line-height:16px; font-size:12px; }
+.small { font-size:13px; color:#333; margin-top:6px; }
+
+/* 🔹 Upload animation overlay */
+#uploadOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 999;
+  color: white;
+  text-align: center;
+}
+.spinner {
+  border: 5px solid rgba(255,255,255,0.3);
+  border-top: 5px solid #00cccc;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.upload-text {
+  font-size: 16px;
+  color: #e0fdfc;
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+
+<body>
+<header>Upload Activity</header>
+
+<!-- 🔹 Upload animation overlay -->
+<div id="uploadOverlay">
+  <div class="spinner"></div>
+  <div class="upload-text">Uploading your photos... Please wait</div>
+</div>
+
+<main>
+<section class="card">
+  <label>Department</label>
+  <input type="text" id="department" disabled />
+
+  <label>Activity</label>
+  <input type="text" id="activity" disabled />
+
+  <label>Date</label>
+  <input type="date" id="activityDate" disabled />
+
+  <label>Supervisor Name</label>
+  <input type="text" id="supervisorName" placeholder="Enter your name" />
+
+  <label>Notes (Optional)</label>
+  <textarea id="notes" placeholder="Observations..."></textarea>
+
+  <label>Upload Photos (3–9)</label>
+  <input type="file" id="photoInput" accept="image/*" multiple />
+  <div id="photoPreview" class="photo-preview"></div>
+
+  <div id="progressContainer">
+    <div id="progressBar">0%</div>
+  </div>
+
+  <div id="status" class="small"></div>
+  <button id="submitBtn">Submit</button>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!firebase) { alert('Firebase not configured'); return; }
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const deptInput = document.getElementById('department');
+  const actInput = document.getElementById('activity');
+  const dateInput = document.getElementById('activityDate');
+  const supInput = document.getElementById('supervisorName');
+  const notesInput = document.getElementById('notes');
+  const photoInput = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photoPreview');
+  const status = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const uploadOverlay = document.getElementById('uploadOverlay');
+
+  let selectedPhotos = [];
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const department = urlParams.get('department') || '';
+  const activityName = urlParams.get('activity') || '';
+  const activityId = urlParams.get('id');
+  const today = new Date().toLocaleDateString('en-CA');
+
+  deptInput.value = department;
+  actInput.value = activityName;
+  dateInput.value = today;
+
+  // ✅ Auto-fill supervisor name from localStorage
+  const savedSupervisor = localStorage.getItem('supervisorName');
+  if (savedSupervisor) supInput.value = savedSupervisor;
+
+  auth.onAuthStateChanged(user => {
+    if (!user) window.location.href = 'index.html';
+  });
+
+  function renderPhotoPreview() {
+    photoPreview.innerHTML = '';
+    selectedPhotos.forEach((file, index) => {
+      const container = document.createElement('div');
+      container.className = 'photo-container';
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.innerHTML = '❌';
+      delBtn.onclick = () => {
+        selectedPhotos.splice(index, 1);
+        renderPhotoPreview();
+      };
+
+      container.appendChild(img);
+      container.appendChild(delBtn);
+      photoPreview.appendChild(container);
+    });
+  }
+
+  photoInput.addEventListener('change', e => {
+    selectedPhotos = Array.from(e.target.files);
+    if (selectedPhotos.length < 3 || selectedPhotos.length > 9) {
+      alert('Select between 3 and 9 photos');
+      photoInput.value = '';
+      selectedPhotos = [];
+      renderPhotoPreview();
+      return;
+    }
+    renderPhotoPreview();
+  });
+
+  async function uploadImages(files) {
+    const uploaded = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const compressed = await imageCompression(file, { maxSizeMB: 0.2, maxWidthOrHeight: 1920 });
+      const formData = new FormData();
+      formData.append('file', compressed);
+      formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`);
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) {
+            const percent = Math.round(((i + e.loaded / e.total) / files.length) * 100);
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+          }
+        };
+        xhr.onload = () => {
+          const res = JSON.parse(xhr.responseText);
+          if (res.secure_url) {
+            uploaded.push({ url: res.secure_url });
+            resolve();
+          } else reject('Upload failed');
+        };
+        xhr.onerror = () => reject('Upload failed');
+        xhr.send(formData);
+      });
+    }
+    return uploaded;
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const supName = supInput.value.trim();
+    if (!supName) return alert('Enter supervisor name');
+    if (selectedPhotos.length < 3) return alert('Upload at least 3 photos');
+
+    localStorage.setItem('supervisorName', supName);
+
+    status.textContent = 'Uploading...';
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    uploadOverlay.style.display = 'flex'; // 🔹 Show overlay spinner
+
+    try {
+      const photos = await uploadImages(selectedPhotos);
+
+      await db.collection('submissions').add({
+        date: dateInput.value,
+        department: deptInput.value,
+        activityName: actInput.value,
+        supervisor: supName,
+        notes: notesInput.value.trim(),
+        photos,
+        status: 'Completed',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      if (activityId) {
+        await db.collection('activities').doc(activityId).update({
+          status: 'Completed',
+          completedBy: supName,
+          completedDate: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      uploadOverlay.style.display = 'none'; // 🔹 Hide overlay
+      status.textContent = 'Submitted successfully!';
+      setTimeout(() => window.location.href = 'supervisor-dashboard.html', 1000);
+
+    } catch (err) {
+      console.error(err);
+      uploadOverlay.style.display = 'none'; // hide overlay if error
+      status.textContent = 'Upload failed: ' + err;
+    }
+  });
+});
+</script>
+</main>
+</body>
+</html>
