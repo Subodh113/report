@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
       await db.collection('users').doc(cred.user.uid).set({email, role: 'supervisor', createdAt: firebase.firestore.FieldValue.serverTimestamp()});
-      window.location.href = 'supervisor.html';
+      window.location.href = 'supervisor-dashboard.html';
     } catch (err) { console.error(err); loginMsg.textContent = err.message || 'Signup failed'; }
   });
 });
