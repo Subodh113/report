@@ -3,23 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Softservice — Facility Login</title>
+  <title>Facility Login</title>
 
-  <!-- ✅ PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0ea5a4" />
 
-  <!-- ✅ Icons -->
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" href="/icons/icon-512.png">
-
-  <!-- ✅ Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-  <script src="/scripts/firebase-config.js"></script>
-  <script src="/scripts/auth.js" defer></script>
+  <script src="scripts/firebase-config.js"></script>
+  <script src="scripts/auth.js" defer></script>
 
   <style>
     :root {
@@ -30,7 +25,10 @@
       --error: #ef4444;
       --radius: 16px;
     }
-    * { box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
     body {
       background: var(--bg);
       margin: 0;
@@ -93,13 +91,14 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-    button.btn:hover { background: #0d9488; }
+    button.btn:hover {
+      background: #0d9488;
+    }
     #installBtn {
       margin-top: 10px;
       background: white;
       color: var(--accent);
       border: 2px solid var(--accent);
-      display: none;
     }
     #loginMsg {
       text-align: center;
@@ -113,12 +112,18 @@
       color: var(--muted);
       margin-top: 1.5rem;
     }
+
+    /* Responsive tweaks */
+    @media (max-width: 500px) {
+      body { padding: 1rem; }
+      .card { padding: 1.5rem; }
+    }
   </style>
 </head>
 <body>
   <main class="card">
-    <h1>🔐 Login</h1>
-    <p class="muted">Facility management secure access</p>
+    <h1>🔐Login</h1>
+    <p class="muted">facility management secure access</p>
 
     <div class="form">
       <label>Email</label>
@@ -127,25 +132,18 @@
       <input id="password" type="password" placeholder="Enter password" />
 
       <button id="loginBtn" class="btn">Sign In</button>
-      <button id="installBtn" class="btn">📲 Install App</button>
+      <button id="installBtn" class="btn" style="display:none;">📲 Install App</button>
       <div id="loginMsg"></div>
     </div>
 
     <footer>
       Admin can create supervisor accounts<br>
-      © 2025 Facility Management
+      © 2025 Facility management
     </footer>
   </main>
 
   <script>
-    // ✅ Service Worker registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log('✅ Service Worker Registered'))
-        .catch(err => console.error('❌ SW registration failed:', err));
-    }
-
-    // ✅ PWA install prompt
+    // PWA install handler
     let deferredPrompt;
     const installBtn = document.getElementById('installBtn');
 
@@ -156,14 +154,18 @@
     });
 
     installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
       installBtn.style.display = 'none';
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === 'accepted') {
-        console.log('App installed');
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
       }
-      deferredPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA installed');
+      installBtn.style.display = 'none';
     });
   </script>
 </body>
