@@ -1,7 +1,7 @@
 {
   "name": "Softservice",
   "short_name": "Softservice",
-  "start_url": "/dashboard.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
