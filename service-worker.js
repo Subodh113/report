@@ -1,6 +1,6 @@
-const CACHE_NAME = 'softservice-v1';
+const CACHE_NAME = 'softservice';
 const ASSETS_TO_CACHE = [
-  '/dashboard.html',
+  '/index.html',
   '/offline.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
