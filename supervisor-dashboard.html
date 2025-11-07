@@ -15,67 +15,261 @@
   --muted:#6b7280;
   --card-bg:#ffffff;
 }
-*{box-sizing:border-box}
-body{font-family:'Inter',sans-serif;margin:0;background:#f4f7f9;color:#111;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#f4f7f9;
+  color:#111;
+  -webkit-tap-highlight-color:transparent;
+  overflow-x:hidden;
+}
 
 /* Header */
-header{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;padding:14px 16px;
-display:flex;justify-content:space-between;align-items:center;font-size:16px;position:sticky;top:0;z-index:1000;}
-header .profile{display:flex;align-items:center;gap:6px;font-size:13px}
+header{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#fff;
+  padding:14px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:16px;
+  position:sticky;
+  top:0;
+  z-index:1000;
+  animation:slideDown .5s ease;
+}
+@keyframes slideDown{
+  from{transform:translateY(-50%);opacity:0;}
+  to{transform:none;opacity:1;}
+}
+header .profile{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+}
 
 /* Layout */
-main{max-width:700px;margin:0 auto;padding:10px 10px 100px;display:flex;flex-direction:column;gap:14px}
+main{
+  max-width:700px;
+  margin:0 auto;
+  padding:10px 10px 100px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  animation:fadeInUp .7s ease;
+}
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:none;}
+}
 
 /* Stats */
-.stats-grid{display:flex;flex-wrap:wrap;gap:8px}
-.stat-card{flex:1;min-width:110px;background:var(--card-bg);border-radius:10px;padding:10px 6px;text-align:center;
-box-shadow:0 3px 10px rgba(0,0,0,0.05)}
-.stat-card h3{margin:0;font-size:20px;color:var(--accent)}
-.stat-card p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+.stats-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.stat-card{
+  flex:1;
+  min-width:110px;
+  background:var(--card-bg);
+  border-radius:10px;
+  padding:10px 6px;
+  text-align:center;
+  box-shadow:0 3px 10px rgba(0,0,0,0.05);
+  animation:fadeInCard .6s ease;
+}
+@keyframes fadeInCard{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:none;}
+}
+.stat-card h3{
+  margin:0;
+  font-size:20px;
+  color:var(--accent);
+}
+.stat-card p{
+  margin:3px 0 0;
+  font-size:12px;
+  color:var(--muted);
+}
 
-/* Filters */
-.controls{display:flex;flex-direction:column;gap:6px}
-select,.search{padding:8px 10px;border-radius:8px;border:1px solid #e3e7ea;font-size:13px;width:100%}
+/* Department */
+.department-badge{
+  background:white;
+  border-radius:8px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.05);
+  padding:10px;
+  font-size:13px;
+  color:var(--accent);
+  font-weight:600;
+  text-align:center;
+  animation:fadeInCard .8s ease;
+}
 
 /* Cards */
-.card{background:var(--card-bg);border-radius:10px;padding:10px;box-shadow:0 3px 12px rgba(0,0,0,0.05)}
-.card h2{margin:6px 0 10px;color:var(--accent);font-size:16px}
+.card{
+  background:var(--card-bg);
+  border-radius:10px;
+  padding:10px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.05);
+  transition:transform .25s ease, box-shadow .25s ease;
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 16px rgba(0,0,0,0.08);
+}
+.card h2{
+  margin:6px 0 10px;
+  color:var(--accent);
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
 
 /* Tables */
-.table-container{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:420px;font-size:13px}
-th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #f0f0f0}
-th{background:var(--accent);color:#fff;font-size:12px}
-tbody tr{opacity:0;transform:translateY(4px);animation:fadeIn .3s forwards}
-@keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
+.table-container{
+  overflow-x:auto;
+  transition:max-height .4s ease;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:420px;
+  font-size:13px;
+}
+th,td{
+  padding:8px 6px;
+  text-align:left;
+  border-bottom:1px solid #f0f0f0;
+}
+th{
+  background:var(--accent);
+  color:#fff;
+  font-size:12px;
+}
+tbody tr{
+  opacity:0;
+  transform:translateY(4px);
+  animation:rowFadeIn .4s forwards;
+  transition:background .3s ease;
+}
+@keyframes rowFadeIn{
+  to{opacity:1;transform:translateY(0);}
+}
+tbody tr.new-row{
+  background:#e0f5f2;
+}
+tbody tr.new-row td{
+  transition:background .8s ease;
+}
 
 /* Buttons */
-button.action-btn{background:var(--accent);color:white;border:none;border-radius:8px;padding:6px 10px;
-font-size:12px;cursor:pointer;transition:background .2s}
-button.action-btn:hover{background:var(--accent-2)}
+button.action-btn{
+  background:var(--accent);
+  color:white;
+  border:none;
+  border-radius:8px;
+  padding:6px 10px;
+  font-size:12px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+}
+button.action-btn::after{
+  content:'';
+  position:absolute;
+  width:10px;
+  height:10px;
+  background:rgba(255,255,255,.4);
+  border-radius:50%;
+  transform:scale(0);
+  opacity:0;
+  transition:transform .5s,opacity .6s;
+}
+button.action-btn:active::after{
+  transform:scale(10);
+  opacity:1;
+  transition:0s;
+}
+button.action-btn:hover{
+  background:var(--accent-2);
+}
+
+/* Toggle button */
+.toggle-btn{
+  background:none;
+  border:none;
+  color:var(--accent);
+  font-size:16px;
+  cursor:pointer;
+  padding:4px;
+  transition:transform .2s;
+}
+.toggle-btn:hover{
+  transform:scale(1.1);
+}
 
 /* Status */
-.status-completed{background:rgba(76,175,80,0.1);color:#2e7d32;padding:3px 8px;border-radius:6px;
-font-weight:600;font-size:12px}
-
-/* Toast */
-.toast{position:fixed;bottom:70px;right:20px;background:var(--accent);color:#fff;padding:10px 14px;
-border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.15);animation:slideIn .3s ease;font-size:13px;z-index:9999}
-@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.status-completed{
+  background:rgba(76,175,80,0.1);
+  color:#2e7d32;
+  padding:3px 8px;
+  border-radius:6px;
+  font-weight:600;
+  font-size:12px;
+}
 
 /* Loader */
-.loader{border:3px solid #f3f3f3;border-top:3px solid var(--accent);border-radius:50%;
-width:24px;height:24px;animation:spin 1s linear infinite;margin:10px auto}
+.loader{
+  border:3px solid #f3f3f3;
+  border-top:3px solid var(--accent);
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  animation:spin 1s linear infinite;
+  margin:10px auto;
+}
 @keyframes spin{100%{transform:rotate(360deg)}}
 
 /* Bottom Nav */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:white;
-box-shadow:0 -4px 12px rgba(0,0,0,0.1);border-top:1px solid #eee;padding:5px 0;z-index:999}
-.bottom-nav button{flex:1;border:none;background:none;color:#666;text-align:center;font-size:11px}
-.bottom-nav i{font-size:18px;display:block;margin-bottom:2px}
-.bottom-nav button.active{color:var(--accent);font-weight:600}
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-around;
+  background:white;
+  box-shadow:0 -4px 12px rgba(0,0,0,0.1);
+  border-top:1px solid #eee;
+  padding:5px 0;
+  z-index:999;
+}
+.bottom-nav button{
+  flex:1;
+  border:none;
+  background:none;
+  color:#666;
+  text-align:center;
+  font-size:11px;
+  transition:color .2s;
+}
+.bottom-nav i{
+  font-size:18px;
+  display:block;
+  margin-bottom:2px;
+}
+.bottom-nav button.active{
+  color:var(--accent);
+  font-weight:600;
+}
+.bottom-nav button:active{
+  color:var(--accent-2);
+}
 
-/* Responsive tweaks */
 @media(max-width:420px){
   th,td{font-size:11.5px;padding:6px 4px}
   button.action-btn{font-size:11px;padding:4px 8px}
@@ -96,16 +290,7 @@ box-shadow:0 -4px 12px rgba(0,0,0,0.1);border-top:1px solid #eee;padding:5px 0;z
     <div class="stat-card"><h3 id="pendingCount">0</h3><p>Pending</p></div>
   </div>
 
-  <div class="controls">
-    <select id="departmentFilter">
-      <option value="">All Departments</option>
-      <option value="ME">M&E</option>
-      <option value="HK">H&K</option>
-      <option value="Security">Security</option>
-      <option value="EHS">EHS</option>
-    </select>
-    <input id="searchBox" class="search" placeholder="🔍 Search activity..." />
-  </div>
+  <div class="department-badge" id="deptDisplay">Department: Loading...</div>
 
   <section class="card">
     <h2>Today's Assigned</h2>
@@ -118,8 +303,10 @@ box-shadow:0 -4px 12px rgba(0,0,0,0.1);border-top:1px solid #eee;padding:5px 0;z
   </section>
 
   <section class="card">
-    <h2>Completed (Last 7 Days)</h2>
-    <div class="table-container">
+    <h2>Completed (Last 7 Days)
+      <button id="toggleCompleted" class="toggle-btn"><i class="fa-solid fa-minus"></i></button>
+    </h2>
+    <div class="table-container" id="completedContainer">
       <table>
         <thead><tr><th>SL</th><th>Date</th><th>Activity</th><th>Status</th></tr></thead>
         <tbody id="completedActivities"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
@@ -144,57 +331,46 @@ box-shadow:0 -4px 12px rgba(0,0,0,0.1);border-top:1px solid #eee;padding:5px 0;z
   <button onclick="window.location.href='supervisor-inventory.html'"><i class="fa-solid fa-boxes-stacked"></i>Inventory</button>
 </div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey:"AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
-  authDomain:"facilitymanagement-47470.firebaseapp.com",
-  projectId:"facilitymanagement-47470",
-  storageBucket:"facilitymanagement-47470.firebasestorage.app",
-  messagingSenderId:"638809761503",
-  appId:"1:638809761503:web:1a15443eeeee2414aaab6a"
-};
+const firebaseConfig={apiKey:"AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",authDomain:"facilitymanagement-47470.firebaseapp.com",projectId:"facilitymanagement-47470",storageBucket:"facilitymanagement-47470.firebasestorage.app",messagingSenderId:"638809761503",appId:"1:638809761503:web:1a15443eeeee2414aaab6a"};
 if(!window.firebaseAppsInitialized){firebase.initializeApp(firebaseConfig);window.firebaseAppsInitialized=true;}
-const db=firebase.firestore(); const auth=firebase.auth();
-
+const db=firebase.firestore();const auth=firebase.auth();
 const dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 let supervisorDept='';
 
 auth.onAuthStateChanged(async user=>{
   if(!user){window.location.href='index.html';return;}
-  document.getElementById('supervisorName').textContent=user.email.split('@')[0];
+  const email=user.email;
   const map={'me@jll.com':'M&E','hk@jll.com':'H&K','security@jll.com':'Security','ehs@jll.com':'EHS'};
-  supervisorDept=map[user.email]||'';
-  document.getElementById('departmentFilter').value=supervisorDept;
+  supervisorDept=map[email]||'';
+  document.getElementById('supervisorName').textContent=email.split('@')[0];
+  document.getElementById('deptDisplay').textContent=`Department: ${supervisorDept||'Not Assigned'}`;
   loadAll();
 });
 
-async function loadAll(){
-  await loadAssigned();
-  await loadCompleted();
-  await loadNext7Days();
-  updateStats();
-}
+const toggleBtn=document.getElementById('toggleCompleted');
+const completedContainer=document.getElementById('completedContainer');
+let collapsed=false;
+toggleBtn.addEventListener('click',()=>{
+  collapsed=!collapsed;
+  completedContainer.style.maxHeight=collapsed?'0':'600px';
+  completedContainer.style.overflow='hidden';
+  toggleBtn.innerHTML=collapsed?'<i class="fa-solid fa-plus"></i>':'<i class="fa-solid fa-minus"></i>';
+});
+
+async function loadAll(){await loadAssigned();await loadCompleted();await loadNext7Days();updateStats();}
 
 function getDayRange(d){const s=new Date(d);s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+1);return{start:s,end:e};}
-
-/* Search Filter */
-document.getElementById('searchBox').addEventListener('input',e=>{
-  const q=e.target.value.toLowerCase().trim();
-  document.querySelectorAll('#assignedActivities tr').forEach(tr=>{
-    if(tr.querySelector('.loader'))return;
-    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
-  });
-});
 
 /* Assigned */
 async function loadAssigned(){
   const tbody=document.getElementById('assignedActivities');
   tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
-  const dept=document.getElementById('departmentFilter').value;
   const today=new Date();const {start,end}=getDayRange(today);
   const todayName=dayNames[today.getDay()];
   const schedules=await db.collection('activitySchedules').orderBy('createdAt','desc').get();
@@ -204,10 +380,10 @@ async function loadAssigned(){
     .get();
   const done=new Set();
   subs.forEach(d=>{const s=d.data();if(s.photos&&s.photos.length>0)done.add(`${s.department}__${s.activityName}`);});
-  tbody.innerHTML='';
-  let sl=1;
+  tbody.innerHTML='';let sl=1;
   schedules.forEach(doc=>{
-    const s=doc.data();if(dept&&s.department!==dept)return;
+    const s=doc.data();
+    if(supervisorDept && s.department!==supervisorDept)return;
     if(done.has(`${s.department}__${s.activityName}`))return;
     let show=false;
     if(s.frequency==='Daily')show=true;
@@ -216,10 +392,11 @@ async function loadAssigned(){
       show=(d2.getDate()===today.getDate()&&d2.getMonth()===today.getMonth());}
     if(show){
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${sl++}</td><td>${s.activityName}</td><td>${s.frequency}</td>
-      <td><button class="action-btn">Upload</button></td>`;
+      tr.classList.add('new-row');
+      tr.innerHTML=`<td>${sl++}</td><td>${s.activityName}</td><td>${s.frequency}</td><td><button class="action-btn">Upload</button></td>`;
       tr.querySelector('button').onclick=()=>openUpload(s.department,s.activityName,doc.id);
       tbody.appendChild(tr);
+      setTimeout(()=>tr.classList.remove('new-row'),1000);
     }
   });
   if(tbody.innerHTML==='')tbody.innerHTML='<tr><td colspan="4">No activities today</td></tr>';
@@ -229,34 +406,32 @@ async function loadAssigned(){
 async function loadCompleted(){
   const tbody=document.getElementById('completedActivities');
   tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
-  const dept=document.getElementById('departmentFilter').value;
   const today=new Date();const weekAgo=new Date();weekAgo.setDate(today.getDate()-7);
   const subs=await db.collection('submissions').orderBy('timestamp','desc').get();
   tbody.innerHTML='';let sl=1;
   subs.forEach(d=>{
     const s=d.data();
-    if(dept&&s.department!==dept)return;
+    if(supervisorDept && s.department!==supervisorDept)return;
     if(!s.photos||s.photos.length===0)return;
     const date=s.timestamp?s.timestamp.toDate():new Date(s.date);
     if(date<weekAgo)return;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${sl++}</td><td>${date.toISOString().split('T')[0]}</td>
-      <td>${s.activityName}</td><td><span class="status-completed">Completed</span></td>`;
+    tr.innerHTML=`<td>${sl++}</td><td>${date.toISOString().split('T')[0]}</td><td>${s.activityName}</td><td><span class="status-completed">Completed</span></td>`;
     tbody.appendChild(tr);
   });
   if(tbody.innerHTML==='')tbody.innerHTML='<tr><td colspan="4">No completed activities</td></tr>';
 }
 
-/* Next 7 Days */
+/* Next 7 Days (Tomorrow → +7) */
 async function loadNext7Days(){
   const tbody=document.getElementById('weekSchedule');
   tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
-  const dept=document.getElementById('departmentFilter').value;
-  const today=new Date();const schedules=await db.collection('activitySchedules').orderBy('createdAt','desc').get();
+  const today=new Date();
+  const schedules=await db.collection('activitySchedules').orderBy('createdAt','desc').get();
   const list=[];
   schedules.docs.forEach(doc=>{
-    const s=doc.data();if(dept&&s.department!==dept)return;
-    for(let i=1;i<=7;i++){
+    const s=doc.data();if(supervisorDept && s.department!==supervisorDept)return;
+    for(let i=1;i<=7;i++){ // start tomorrow
       const d=new Date();d.setDate(today.getDate()+i);
       const name=dayNames[d.getDay()];
       let show=false;
@@ -268,43 +443,70 @@ async function loadNext7Days(){
     }
   });
   tbody.innerHTML='';
-  if(list.length===0)tbody.innerHTML='<tr><td colspan="4">No upcoming</td></tr>';
+  if(list.length===0)tbody.innerHTML='<tr><td colspan="4">No upcoming activities</td></tr>';
   else list.forEach((it,i)=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${i+1}</td><td>${it.date}</td><td>${it.activity}</td>
-      <td><button class="action-btn">Upload</button></td>`;
+    tr.classList.add('new-row');
+    tr.innerHTML=`<td>${i+1}</td><td>${it.date}</td><td>${it.activity}</td><td><button class="action-btn">Upload</button></td>`;
     tr.querySelector('button').onclick=()=>openUpload(it.dept,it.activity,it.id,it.date);
     tbody.appendChild(tr);
+    setTimeout(()=>tr.classList.remove('new-row'),1000);
   });
 }
 
 /* Stats */
 async function updateStats(){
-  const today=new Date();const {start}=getDayRange(today);
-  const weekAgo=new Date();weekAgo.setDate(today.getDate()-7);
-  const subs=await db.collection('submissions').orderBy('timestamp','desc').get();
-  let todayCount=0,weekCount=0;
-  subs.forEach(d=>{
-    const s=d.data();
-    if(!s.photos||s.photos.length===0)return;
-    const dt=s.timestamp?s.timestamp.toDate():new Date(s.date);
-    if(dt>=start)todayCount++;
-    if(dt>=weekAgo)weekCount++;
+  const today = new Date();
+  const { start } = getDayRange(today);
+  const weekAgo = new Date();
+  weekAgo.setDate(today.getDate() - 7);
+
+  const subs = await db.collection('submissions').orderBy('timestamp', 'desc').get();
+  let todayCount = 0, weekCount = 0;
+
+  subs.forEach(d => {
+    const s = d.data();
+    if (supervisorDept && s.department !== supervisorDept) return;
+    if (!s.photos || s.photos.length === 0) return;
+    const dt = s.timestamp ? s.timestamp.toDate() : new Date(s.date);
+    if (dt >= start) todayCount++;
+    if (dt >= weekAgo) weekCount++;
   });
-  document.getElementById('todayCompleted').textContent=todayCount;
-  document.getElementById('weekCompleted').textContent=weekCount;
-  const assigned=document.querySelectorAll('#assignedActivities tr').length;
-  document.getElementById('pendingCount').textContent=Math.max(assigned-1,0);
+
+  document.getElementById('todayCompleted').textContent = todayCount;
+  document.getElementById('weekCompleted').textContent = weekCount;
+
+  const assigned = document.querySelectorAll('#assignedActivities tr').length;
+  document.getElementById('pendingCount').textContent = Math.max(assigned - 1, 0);
 }
 
-/* Helpers */
-function openUpload(dept,activity,id,date=''){
-  const d=date||new Date().toISOString().split('T')[0];
-  window.location.href=`upload-activity.html?department=${dept}&activity=${activity}&id=${id}&date=${d}`;
+/* -------------------- Open Upload -------------------- */
+function openUpload(dept, activity, id, date = '') {
+  const d = date || new Date().toISOString().split('T')[0];
+  window.location.href = `upload-activity.html?department=${encodeURIComponent(dept)}&activity=${encodeURIComponent(activity)}&id=${id}&date=${d}`;
 }
 
-/* Filter change */
-document.getElementById('departmentFilter').addEventListener('change',loadAll);
+/* -------------------- Toast Message -------------------- */
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+/* -------------------- Refresh Button (Optional) -------------------- */
+// You can call this from anywhere to reload the dashboard data smoothly
+async function refreshDashboard() {
+  showToast("Refreshing data...");
+  await loadAll();
+  showToast("Dashboard updated successfully!");
+}
+
+/* -------------------- Auto Refresh Every 10 Minutes -------------------- */
+setInterval(() => {
+  loadAll();
+}, 10 * 60 * 1000); // every 10 minutes
 </script>
 </body>
 </html>
