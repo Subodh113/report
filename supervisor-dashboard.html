@@ -1,318 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>Supervisor Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
 <style>
-body { font-family:'Poppins', sans-serif; margin:0; background:#f6f9fc; }
-header { background: linear-gradient(135deg,#006666,#009999); color:white; padding:18px 0; text-align:center; font-size:22px; font-weight:600; }
-main { max-width: 1000px; margin:20px auto; padding:0 15px 80px; } /* added bottom padding */
-h2 { color:#006666; margin-bottom:10px; }
-.card { background:white; padding:15px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:20px; }
-table { width:100%; border-collapse:collapse; border-radius:8px; overflow:hidden; }
-th, td { padding:12px; text-align:left; border-bottom:1px solid #eee; }
-th { background:#006666; color:white; text-transform:uppercase; }
-tr:nth-child(even){background:#f9f9f9;}
-.status-completed { color:green; font-weight:600; }
-.status-pending { color:red; font-weight:600; }
-button.action-btn { background:#006666; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
-button.action-btn:hover { background:#009999; }
-select { padding:6px 10px; border-radius:6px; border:1px solid #ccc; margin-bottom:10px; }
-@media(max-width:768px){ th,td{font-size:13px;} button.action-btn{padding:4px 8px;} }
-.bottom-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  display: flex;
-  justify-content: space-around;
-  background: white;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-  border-top: 1px solid #eee;
-  z-index: 999;
-  padding: 6px 0;
+:root {
+  --accent:#006666;
+  --accent-2:#009999;
+  --muted:#6b7280;
+  --card-bg:#ffffff;
 }
-.bottom-nav button {
-  background: none;
-  border: none;
-  text-align: center;
-  color: #555;
-  flex: 1;
-}
-.bottom-nav button.active {
-  color: #006666;
-  font-weight: 600;
-}
-.bottom-nav i {
-  font-size: 22px;
-  display: block;
-  margin-bottom: 2px;
-}
-.bottom-nav span {
-  font-size: 12px;
+*{box-sizing:border-box}
+body{font-family:'Inter',sans-serif;margin:0;background:#f4f7f9;color:#111;-webkit-tap-highlight-color:transparent}
+
+/* Header */
+header{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;padding:14px 16px;
+display:flex;justify-content:space-between;align-items:center;font-size:16px;position:sticky;top:0;z-index:1000;}
+header .profile{display:flex;align-items:center;gap:6px;font-size:13px}
+
+/* Layout */
+main{max-width:700px;margin:0 auto;padding:10px 10px 100px;display:flex;flex-direction:column;gap:14px}
+
+/* Stats */
+.stats-grid{display:flex;flex-wrap:wrap;gap:8px}
+.stat-card{flex:1;min-width:110px;background:var(--card-bg);border-radius:10px;padding:10px 6px;text-align:center;
+box-shadow:0 3px 10px rgba(0,0,0,0.05)}
+.stat-card h3{margin:0;font-size:20px;color:var(--accent)}
+.stat-card p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+
+/* Filters */
+.controls{display:flex;flex-direction:column;gap:6px}
+select,.search{padding:8px 10px;border-radius:8px;border:1px solid #e3e7ea;font-size:13px;width:100%}
+
+/* Cards */
+.card{background:var(--card-bg);border-radius:10px;padding:10px;box-shadow:0 3px 12px rgba(0,0,0,0.05)}
+.card h2{margin:6px 0 10px;color:var(--accent);font-size:16px}
+
+/* Tables */
+.table-container{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:420px;font-size:13px}
+th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #f0f0f0}
+th{background:var(--accent);color:#fff;font-size:12px}
+tbody tr{opacity:0;transform:translateY(4px);animation:fadeIn .3s forwards}
+@keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
+
+/* Buttons */
+button.action-btn{background:var(--accent);color:white;border:none;border-radius:8px;padding:6px 10px;
+font-size:12px;cursor:pointer;transition:background .2s}
+button.action-btn:hover{background:var(--accent-2)}
+
+/* Status */
+.status-completed{background:rgba(76,175,80,0.1);color:#2e7d32;padding:3px 8px;border-radius:6px;
+font-weight:600;font-size:12px}
+
+/* Toast */
+.toast{position:fixed;bottom:70px;right:20px;background:var(--accent);color:#fff;padding:10px 14px;
+border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.15);animation:slideIn .3s ease;font-size:13px;z-index:9999}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Loader */
+.loader{border:3px solid #f3f3f3;border-top:3px solid var(--accent);border-radius:50%;
+width:24px;height:24px;animation:spin 1s linear infinite;margin:10px auto}
+@keyframes spin{100%{transform:rotate(360deg)}}
+
+/* Bottom Nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:white;
+box-shadow:0 -4px 12px rgba(0,0,0,0.1);border-top:1px solid #eee;padding:5px 0;z-index:999}
+.bottom-nav button{flex:1;border:none;background:none;color:#666;text-align:center;font-size:11px}
+.bottom-nav i{font-size:18px;display:block;margin-bottom:2px}
+.bottom-nav button.active{color:var(--accent);font-weight:600}
+
+/* Responsive tweaks */
+@media(max-width:420px){
+  th,td{font-size:11.5px;padding:6px 4px}
+  button.action-btn{font-size:11px;padding:4px 8px}
 }
 </style>
 </head>
 <body>
 
-<header>Supervisor Dashboard</header>
+<header>
+  <div><b>Supervisor</b> Dashboard</div>
+  <div class="profile"><i class="fa-solid fa-user"></i><span id="supervisorName">Loading...</span></div>
+</header>
+
 <main>
+  <div class="stats-grid">
+    <div class="stat-card"><h3 id="todayCompleted">0</h3><p>Completed Today</p></div>
+    <div class="stat-card"><h3 id="weekCompleted">0</h3><p>Last 7 Days</p></div>
+    <div class="stat-card"><h3 id="pendingCount">0</h3><p>Pending</p></div>
+  </div>
 
-<section class="card">
-<label>Select Department:</label>
-<select id="departmentFilter">
-  <option value="">All Departments</option>
-  <option value="M&E">M&E</option>
-  <option value="H&K">H&K</option>
-  <option value="Security">Security</option>
-  <option value="EHS">EHS</option>
-</select>
-</section>
+  <div class="controls">
+    <select id="departmentFilter">
+      <option value="">All Departments</option>
+      <option value="ME">M&E</option>
+      <option value="HK">H&K</option>
+      <option value="Security">Security</option>
+      <option value="EHS">EHS</option>
+    </select>
+    <input id="searchBox" class="search" placeholder="🔍 Search activity..." />
+  </div>
 
-<section class="card">
-<h2>Today's Assigned Activities</h2>
-<table>
-<thead>
-<tr>
-<th>SL</th>
-<th>Activity</th>
-<th>Frequency</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody id="assignedActivities"><tr><td colspan="4">Loading...</td></tr></tbody>
-</table>
-</section>
+  <section class="card">
+    <h2>Today's Assigned</h2>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>SL</th><th>Activity</th><th>Frequency</th><th>Action</th></tr></thead>
+        <tbody id="assignedActivities"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-<section class="card">
-<h2>Completed Activities (Last 7 Days)</h2>
-<table>
-<thead>
-<tr>
-<th>SL</th>
-<th>Date</th>
-<th>Activity</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody id="completedActivities"><tr><td colspan="4">Loading...</td></tr></tbody>
-</table>
-</section>
+  <section class="card">
+    <h2>Completed (Last 7 Days)</h2>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>SL</th><th>Date</th><th>Activity</th><th>Status</th></tr></thead>
+        <tbody id="completedActivities"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
+      </table>
+    </div>
+  </section>
 
-<section class="card">
-<h2>Next 7 Days Schedule</h2>
-<table>
-<thead>
-<tr><th>SL</th><th>Date</th><th>Activity</th><th>Action</th></tr>
-</thead>
-<tbody id="weekSchedule"><tr><td colspan="4">Loading...</td></tr></tbody>
-</table>
-</section>
+  <section class="card">
+    <h2>Next 7 Days Schedule</h2>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>SL</th><th>Date</th><th>Activity</th><th>Action</th></tr></thead>
+        <tbody id="weekSchedule"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
 
-<!-- Firebase -->
+<div class="bottom-nav">
+  <button onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-house"></i>Home</button>
+  <button class="active" onclick="window.location.href='supervisor-dashboard.html'"><i class="fa-solid fa-list-check"></i>Activities</button>
+  <button onclick="window.location.href='supervisor-inventory.html'"><i class="fa-solid fa-boxes-stacked"></i>Inventory</button>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
-  authDomain: "facilitymanagement-47470.firebaseapp.com",
-  projectId: "facilitymanagement-47470",
-  storageBucket: "facilitymanagement-47470.firebasestorage.app",
-  messagingSenderId: "638809761503",
-  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+  apiKey:"AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain:"facilitymanagement-47470.firebaseapp.com",
+  projectId:"facilitymanagement-47470",
+  storageBucket:"facilitymanagement-47470.firebasestorage.app",
+  messagingSenderId:"638809761503",
+  appId:"1:638809761503:web:1a15443eeeee2414aaab6a"
 };
-if (!window.firebaseAppsInitialized) {
-  firebase.initializeApp(firebaseConfig);
-  window.firebaseAppsInitialized = true;
-}
-const auth = firebase.auth();
-const db = firebase.firestore();
+if(!window.firebaseAppsInitialized){firebase.initializeApp(firebaseConfig);window.firebaseAppsInitialized=true;}
+const db=firebase.firestore(); const auth=firebase.auth();
 
-let supervisorEmail = '';
-let supervisorDept = '';
+const dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+let supervisorDept='';
 
-auth.onAuthStateChanged(async user => {
-  if (!user) { window.location.href = 'index.html'; return; }
-  supervisorEmail = user.email;
-  const deptSelect = document.getElementById('departmentFilter');
-  const emailToDeptMap = {
-    'me@jll.com': 'M&E',
-    'hk@jll.com': 'H&K',
-    'security@jll.com': 'Security',
-    'ehs@jll.com': 'EHS'
-  };
-  supervisorDept = emailToDeptMap[supervisorEmail] || '';
-  if (supervisorDept) deptSelect.value = supervisorDept;
-
-  await loadAssignedActivities();
-  await loadCompletedActivities();
-  await loadWeekSchedule();
+auth.onAuthStateChanged(async user=>{
+  if(!user){window.location.href='index.html';return;}
+  document.getElementById('supervisorName').textContent=user.email.split('@')[0];
+  const map={'me@jll.com':'M&E','hk@jll.com':'H&K','security@jll.com':'Security','ehs@jll.com':'EHS'};
+  supervisorDept=map[user.email]||'';
+  document.getElementById('departmentFilter').value=supervisorDept;
+  loadAll();
 });
 
-// -------------------- Today's Assigned Activities --------------------
-async function loadAssignedActivities() {
-  const tbody = document.getElementById('assignedActivities');
-  const deptFilter = document.getElementById('departmentFilter').value;
-  const snapshot = await db.collection('activitySchedules').orderBy('createdAt', 'desc').get();
-
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const todayDay = dayNames[today.getDay()];
-
-  tbody.innerHTML = '';
-  let sl = 1;
-
-  for (const doc of snapshot.docs) {
-    const s = doc.data();
-    if (deptFilter && s.department !== deptFilter) continue;
-
-    const completedSnapshot = await db.collection('submissions')
-      .where('department','==', s.department)
-      .where('activityName','==', s.activityName)
-      .where('date','==', todayStr)
-      .where('status','==','Completed')
-      .get();
-    if (!completedSnapshot.empty) continue;
-
-    let show = false;
-    if (s.frequency === 'Daily') show = true;
-    else if (s.frequency === 'Weekly' && s.recurringDays?.includes(todayDay)) show = true;
-    else if ((s.frequency === 'Monthly' || s.frequency === 'Quarterly') && s.nextDate) {
-      const d = new Date(s.nextDate);
-      show = d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
-    }
-
-    if (show) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${sl++}</td>
-        <td>${s.activityName}</td>
-        <td>${s.frequency}</td>
-        <td><button class="action-btn" onclick="openUpload('${encodeURIComponent(s.department)}','${encodeURIComponent(s.activityName)}','${doc.id}')">Upload</button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  if (tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4">No activities today</td></tr>';
+async function loadAll(){
+  await loadAssigned();
+  await loadCompleted();
+  await loadNext7Days();
+  updateStats();
 }
 
-// -------------------- Completed Activities (Last 7 Days) --------------------
-async function loadCompletedActivities() {
-  const tbody = document.getElementById('completedActivities');
-  const deptFilter = document.getElementById('departmentFilter').value;
-  const snapshot = await db.collection('submissions').orderBy('timestamp','desc').get();
+function getDayRange(d){const s=new Date(d);s.setHours(0,0,0,0);const e=new Date(s);e.setDate(s.getDate()+1);return{start:s,end:e};}
 
-  const today = new Date();
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(today.getDate() - 7);
+/* Search Filter */
+document.getElementById('searchBox').addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase().trim();
+  document.querySelectorAll('#assignedActivities tr').forEach(tr=>{
+    if(tr.querySelector('.loader'))return;
+    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+  });
+});
 
-  tbody.innerHTML = '';
-  let sl = 1;
+/* Assigned */
+async function loadAssigned(){
+  const tbody=document.getElementById('assignedActivities');
+  tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
+  const dept=document.getElementById('departmentFilter').value;
+  const today=new Date();const {start,end}=getDayRange(today);
+  const todayName=dayNames[today.getDay()];
+  const schedules=await db.collection('activitySchedules').orderBy('createdAt','desc').get();
+  const subs=await db.collection('submissions')
+    .where('timestamp','>=',firebase.firestore.Timestamp.fromDate(start))
+    .where('timestamp','<',firebase.firestore.Timestamp.fromDate(end))
+    .get();
+  const done=new Set();
+  subs.forEach(d=>{const s=d.data();if(s.photos&&s.photos.length>0)done.add(`${s.department}__${s.activityName}`);});
+  tbody.innerHTML='';
+  let sl=1;
+  schedules.forEach(doc=>{
+    const s=doc.data();if(dept&&s.department!==dept)return;
+    if(done.has(`${s.department}__${s.activityName}`))return;
+    let show=false;
+    if(s.frequency==='Daily')show=true;
+    else if(s.frequency==='Weekly'&&s.recurringDays?.includes(todayName))show=true;
+    else if(s.nextDate){const d2=new Date(s.nextDate);
+      show=(d2.getDate()===today.getDate()&&d2.getMonth()===today.getMonth());}
+    if(show){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${sl++}</td><td>${s.activityName}</td><td>${s.frequency}</td>
+      <td><button class="action-btn">Upload</button></td>`;
+      tr.querySelector('button').onclick=()=>openUpload(s.department,s.activityName,doc.id);
+      tbody.appendChild(tr);
+    }
+  });
+  if(tbody.innerHTML==='')tbody.innerHTML='<tr><td colspan="4">No activities today</td></tr>';
+}
 
-  snapshot.docs.forEach(doc => {
-    const s = doc.data();
-    if (deptFilter && s.department !== deptFilter) return;
-    if (s.status !== 'Completed') return;
-
-    const completedDate = new Date(s.date);
-    if (completedDate < sevenDaysAgo) return; // ✅ Only last 7 days
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${sl++}</td>
-      <td>${s.date}</td>
-      <td>${s.activityName}</td>
-      <td class="status-completed">Completed</td>`;
+/* Completed */
+async function loadCompleted(){
+  const tbody=document.getElementById('completedActivities');
+  tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
+  const dept=document.getElementById('departmentFilter').value;
+  const today=new Date();const weekAgo=new Date();weekAgo.setDate(today.getDate()-7);
+  const subs=await db.collection('submissions').orderBy('timestamp','desc').get();
+  tbody.innerHTML='';let sl=1;
+  subs.forEach(d=>{
+    const s=d.data();
+    if(dept&&s.department!==dept)return;
+    if(!s.photos||s.photos.length===0)return;
+    const date=s.timestamp?s.timestamp.toDate():new Date(s.date);
+    if(date<weekAgo)return;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${sl++}</td><td>${date.toISOString().split('T')[0]}</td>
+      <td>${s.activityName}</td><td><span class="status-completed">Completed</span></td>`;
     tbody.appendChild(tr);
   });
-
-  if (tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4">No completed activities in last 7 days</td></tr>';
+  if(tbody.innerHTML==='')tbody.innerHTML='<tr><td colspan="4">No completed activities</td></tr>';
 }
 
-// -------------------- Next 7 Days Schedule (with Upload Button) --------------------
-async function loadWeekSchedule() {
-  const tbody = document.getElementById('weekSchedule');
-  const deptFilter = document.getElementById('departmentFilter').value;
-  const snapshot = await db.collection('activitySchedules').orderBy('createdAt','desc').get();
-
-  const today = new Date();
-  const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const scheduleList = [];
-
-  snapshot.docs.forEach(doc => {
-    const s = doc.data();
-    if (deptFilter && s.department !== deptFilter) return;
-
-    for (let i=0;i<7;i++) {
-      const currentDate = new Date(today);
-      currentDate.setDate(today.getDate()+i);
-      const dayName = dayNames[currentDate.getDay()];
-      let show = false;
-
-      if (s.frequency === 'Daily') show = true;
-      else if (s.frequency === 'Weekly' && s.recurringDays?.includes(dayName)) show = true;
-      else if ((s.frequency === 'Monthly' || s.frequency === 'Quarterly') && s.nextDate) {
-        const d = new Date(s.nextDate);
-        show = d.getDate() === currentDate.getDate() && d.getMonth() === currentDate.getMonth();
-      }
-
-      if (show) {
-        scheduleList.push({
-          id: doc.id,
-          department: s.department,
-          date: currentDate.toISOString().split('T')[0],
-          activityName: s.activityName
-        });
-      }
+/* Next 7 Days */
+async function loadNext7Days(){
+  const tbody=document.getElementById('weekSchedule');
+  tbody.innerHTML='<tr><td colspan="4"><div class="loader"></div></td></tr>';
+  const dept=document.getElementById('departmentFilter').value;
+  const today=new Date();const schedules=await db.collection('activitySchedules').orderBy('createdAt','desc').get();
+  const list=[];
+  schedules.docs.forEach(doc=>{
+    const s=doc.data();if(dept&&s.department!==dept)return;
+    for(let i=1;i<=7;i++){
+      const d=new Date();d.setDate(today.getDate()+i);
+      const name=dayNames[d.getDay()];
+      let show=false;
+      if(s.frequency==='Daily')show=true;
+      else if(s.frequency==='Weekly'&&s.recurringDays?.includes(name))show=true;
+      else if(s.nextDate){const nd=new Date(s.nextDate);
+        show=(nd.getDate()===d.getDate()&&nd.getMonth()===d.getMonth());}
+      if(show)list.push({date:d.toISOString().split('T')[0],activity:s.activityName,id:doc.id,dept:s.department});
     }
   });
-
-  tbody.innerHTML = '';
-  if (scheduleList.length === 0)
-    tbody.innerHTML = '<tr><td colspan="4">No scheduled activities in next 7 days</td></tr>';
-  else {
-    scheduleList.forEach((item, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${index+1}</td>
-        <td>${item.date}</td>
-        <td>${item.activityName}</td>
-        <td><button class="action-btn" onclick="openUpload('${encodeURIComponent(item.department)}','${encodeURIComponent(item.activityName)}','${item.id}','${item.date}')">Upload</button></td>`;
-      tbody.appendChild(tr);
-    });
-  }
+  tbody.innerHTML='';
+  if(list.length===0)tbody.innerHTML='<tr><td colspan="4">No upcoming</td></tr>';
+  else list.forEach((it,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${it.date}</td><td>${it.activity}</td>
+      <td><button class="action-btn">Upload</button></td>`;
+    tr.querySelector('button').onclick=()=>openUpload(it.dept,it.activity,it.id,it.date);
+    tbody.appendChild(tr);
+  });
 }
 
-// -------------------- Open Upload --------------------
-function openUpload(department, activityName, id, date='') {
-  const today = date || new Date().toISOString().split('T')[0];
-  window.location.href = `upload-activity.html?department=${department}&activity=${activityName}&id=${id}&date=${today}`;
+/* Stats */
+async function updateStats(){
+  const today=new Date();const {start}=getDayRange(today);
+  const weekAgo=new Date();weekAgo.setDate(today.getDate()-7);
+  const subs=await db.collection('submissions').orderBy('timestamp','desc').get();
+  let todayCount=0,weekCount=0;
+  subs.forEach(d=>{
+    const s=d.data();
+    if(!s.photos||s.photos.length===0)return;
+    const dt=s.timestamp?s.timestamp.toDate():new Date(s.date);
+    if(dt>=start)todayCount++;
+    if(dt>=weekAgo)weekCount++;
+  });
+  document.getElementById('todayCompleted').textContent=todayCount;
+  document.getElementById('weekCompleted').textContent=weekCount;
+  const assigned=document.querySelectorAll('#assignedActivities tr').length;
+  document.getElementById('pendingCount').textContent=Math.max(assigned-1,0);
 }
 
-// -------------------- Department Filter --------------------
-document.getElementById('departmentFilter').addEventListener('change', async () => {
-  await loadAssignedActivities();
-  await loadCompletedActivities();
-  await loadWeekSchedule();
-});
+/* Helpers */
+function openUpload(dept,activity,id,date=''){
+  const d=date||new Date().toISOString().split('T')[0];
+  window.location.href=`upload-activity.html?department=${dept}&activity=${activity}&id=${id}&date=${d}`;
+}
+
+/* Filter change */
+document.getElementById('departmentFilter').addEventListener('change',loadAll);
 </script>
-</main>
-
-<div class="bottom-nav">
-  <button onclick="window.location.href='dashboard.html'">
-    <i class="fa-solid fa-house"></i><span>Home</span>
-  </button>
-  <button onclick="window.location.href='supervisor-dashboard.html'">
-    <i class="fa-solid fa-list-check"></i><span>Activities</span>
-  </button>
-  <button class="active" onclick="window.location.href='supervisor-inventory.html'">
-    <i class="fa-solid fa-boxes-stacked"></i><span>Inventory</span>
-  </button>
-</div>
-
 </body>
 </html>
