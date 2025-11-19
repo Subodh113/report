@@ -13,7 +13,7 @@ async function generateMultiSlidePPT(records, filename) {
   const companyLogoURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyTCMtrLBcJmjce2b8m4G-bWzxVYfwpG1JdA&usqp=CAU";
 
   // Define colors
-  const headerColor = '014d4d'; // Dark teal
+  const headerColor = '#00008B'; // Dark teal
   const dottedColor = '014d4d'; // Dark teal for light dots
 
   for (const rec of records) {
