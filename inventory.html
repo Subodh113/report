@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Inventory v2.0</title>
+
+<!-- Tailwind CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  body { font-family: Inter, Poppins, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f4f7f9; color:#0f172a; }
+  .tab { cursor:pointer; padding:.5rem 1rem; border-radius:.5rem; }
+  .tab-active { background: #006666; color: white; }
+  .card { background: white; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.06); }
+  .small-muted { color:#475569; font-size:.92rem }
+  .table-head { background:#e6fffa; color:#064e3b; font-weight:600; }
+  .toast { position: fixed; right: 16px; bottom: 16px; z-index:60; }
+  .table-wrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+
+<header class="p-4 bg-white border-b">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <div>
+      <div class="text-xl font-semibold text-teal-800">Admin Inventory — v2.0</div>
+      <div class="small-muted">Simple, readable & responsive inventory manager</div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btnLogout" class="px-3 py-1 rounded bg-teal-600 text-white">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4">
+  <div class="card p-4">
+    <!-- Tabs -->
+    <div class="flex gap-2 flex-wrap">
+      <div id="tabAdd" class="tab tab-active">Add Material</div>
+      <div id="tabManage" class="tab">Manage Inventory</div>
+      <div id="tabCategories" class="tab">Categories</div>
+      <div id="tabSuppliers" class="tab">Suppliers</div>
+    </div>
+
+    <div id="content" class="mt-4">
+      <!-- ADD PANEL -->
+      <section id="panelAdd">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Left: form inputs -->
+          <div class="md:col-span-2 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="font-semibold small-muted">Department</label>
+                <select id="inpDept" class="w-full border rounded px-3 py-2 bg-white">
+                  <option value="">Select Department</option>
+                  <option value="HK">HK</option>
+                  <option value="Pantry">Pantry</option>
+                  <option value="ME">ME</option>
+                  <option value="Security">Security</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-semibold small-muted">Category</label>
+                <div class="flex gap-2">
+                  <select id="inpCategory" class="flex-1 border rounded px-3 py-2 bg-white">
+                    <option value="">Select category</option>
+                  </select>
+                  <button id="btnAddCategory" class="px-3 bg-gray-100 rounded">+Add</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="font-semibold small-muted">Material Name</label>
+              <input id="inpMaterial" class="w-full border rounded px-3 py-2" placeholder="e.g. Taski R1">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="font-semibold small-muted">Container Size</label>
+                <input id="inpContainerSize" type="number" step="0.01" min="0" class="w-full border rounded px-3 py-2" placeholder="e.g. 5">
+              </div>
+              <div>
+                <label class="font-semibold small-muted">Container Unit</label>
+                <select id="inpContainerUnit" class="w-full border rounded px-3 py-2">
+                  <option value="Litre">Litre</option>
+                  <option value="ml">ml</option>
+                  <option value="Kg">Kg</option>
+                  <option value="g">g</option>
+                  <option value="Nos">Nos</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-semibold small-muted">No. of Containers</label>
+                <input id="inpContainerCount" type="number" step="0.01" min="0" class="w-full border rounded px-3 py-2" value="1">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="font-semibold small-muted">MRP (per container)</label>
+                <input id="inpMrp" type="number" step="0.01" class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="font-semibold small-muted">Supplier</label>
+                <div class="flex gap-2">
+                  <select id="inpSupplier" class="flex-1 border rounded px-3 py-2 bg-white"></select>
+                  <button id="btnAddSupplier" class="px-3 bg-gray-100 rounded">+Add</button>
+                </div>
+              </div>
+              <div>
+                <label class="font-semibold small-muted">Received Date</label>
+                <input id="inpDate" type="date" class="w-full border rounded px-3 py-2">
+              </div>
+            </div>
+
+            <div>
+              <label class="font-semibold small-muted">Remarks</label>
+              <textarea id="inpRemarks" rows="2" class="w-full border rounded px-3 py-2"></textarea>
+            </div>
+
+            <div class="flex gap-2 items-center">
+              <button id="btnSave" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Save / Receive</button>
+              <button id="btnClear" class="bg-gray-100 px-4 py-2 rounded">Clear</button>
+              <div id="lastAction" class="small-muted ml-4"></div>
+            </div>
+          </div>
+
+          <!-- Right: info & totals -->
+          <div class="space-y-3">
+            <div class="card p-4">
+              <div class="text-sm font-semibold text-teal-700">Totals (auto)</div>
+              <div class="mt-2">
+                <div class="small-muted">Total in base units</div>
+                <div id="displayTotalBase" class="mt-1 font-medium">—</div>
+              </div>
+              <div class="mt-3">
+                <div class="small-muted">Total MRP</div>
+                <div id="displayTotalMrp" class="mt-1 font-medium">—</div>
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <div class="text-sm font-semibold text-teal-700">How it works</div>
+              <div class="small-muted mt-2">
+                If an inventory item exists (same name + dept + category), this action will <strong>add</strong> the received quantity to that item.
+                Liquids are stored in ml (L -> 1000 ml). We show both base and container counts.
+              </div>
+            </div>
+
+            <div class="card p-4">
+              <div class="text-sm font-semibold text-teal-700">Quick</div>
+              <div class="flex gap-2 mt-2">
+                <button id="btnRefresh" class="px-3 py-1 bg-gray-100 rounded">Refresh</button>
+                <button id="btnCalc" class="px-3 py-1 bg-gray-100 rounded">Recalc</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MANAGE PANEL -->
+      <section id="panelManage" class="hidden mt-4">
+        <div class="flex flex-col md:flex-row gap-3 items-start md:items-center mb-3">
+          <input id="searchBox" placeholder="Search material, category or supplier..." class="flex-1 border rounded px-3 py-2">
+          <select id="filterDept" class="border rounded px-3 py-2 w-44">
+            <option value="">All Departments</option>
+            <option value="HK">HK</option>
+            <option value="Pantry">Pantry</option>
+            <option value="ME">ME</option>
+            <option value="Security">Security</option>
+          </select>
+          <button id="btnReload" class="bg-teal-600 text-white px-3 py-2 rounded">Reload</button>
+        </div>
+
+        <div class="table-wrap card p-3">
+          <table class="min-w-full">
+            <thead class="table-head">
+              <tr>
+                <th class="p-2 text-left">SL</th>
+                <th class="p-2 text-left">Material</th>
+                <th class="p-2">Category</th>
+                <th class="p-2">Dept</th>
+                <th class="p-2">Available (readable)</th>
+                <th class="p-2">Available (containers)</th>
+                <th class="p-2">Container</th>
+                <th class="p-2">MRP</th>
+                <th class="p-2">Supplier</th>
+                <th class="p-2">Date</th>
+                <th class="p-2">Remarks</th>
+                <th class="p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CATEGORIES PANEL -->
+      <section id="panelCategories" class="hidden mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <div class="font-semibold">Add Category</div>
+
+            <label class="small-muted text-sm">Department</label>
+            <select id="catDept" class="w-full border rounded px-3 py-2 mt-1">
+              <option value="">Select Department</option>
+              <option value="HK">HK</option>
+              <option value="Pantry">Pantry</option>
+              <option value="ME">ME</option>
+              <option value="Security">Security</option>
+            </select>
+
+            <label class="small-muted text-sm mt-2 block">Category Name</label>
+            <input id="catName" class="w-full border rounded px-3 py-2 mt-1" placeholder="Category name">
+
+            <div class="flex gap-2 mt-3">
+              <button id="btnSaveCat" class="bg-gray-600 text-white px-3 py-2 rounded">Save</button>
+              <button id="btnClearCat" class="bg-gray-100 px-3 py-2 rounded">Clear</button>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="font-semibold">Categories</div>
+            <div class="mt-3 overflow-auto max-h-72">
+              <table class="w-full">
+                <thead><tr class="text-left small-muted"><th>Dept</th><th>Name</th><th>Actions</th></tr></thead>
+                <tbody id="catBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUPPLIERS PANEL -->
+      <section id="panelSuppliers" class="hidden mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <div class="font-semibold">Add / Edit Supplier</div>
+            <input id="sName" placeholder="Supplier name" class="w-full mt-2 border rounded px-3 py-2">
+            <input id="sPhone" placeholder="Phone" class="w-full mt-2 border rounded px-3 py-2">
+            <input id="sEmail" placeholder="Email" class="w-full mt-2 border rounded px-3 py-2">
+            <textarea id="sAddress" placeholder="Address" rows="3" class="w-full mt-2 border rounded px-3 py-2"></textarea>
+            <div class="flex gap-2 mt-3">
+              <button id="btnSaveSup" class="bg-teal-600 text-white px-3 py-2 rounded">Save Supplier</button>
+              <button id="btnClearSup" class="bg-gray-100 px-3 py-2 rounded">Clear</button>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="font-semibold">Suppliers</div>
+            <div class="mt-3 overflow-auto max-h-72">
+              <table class="w-full">
+                <thead><tr class="text-left small-muted"><th>Name</th><th>Phone</th><th>Actions</th></tr></thead>
+                <tbody id="supBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* ========== Firebase config (inline) ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain: "facilitymanagement-47470.firebaseapp.com",
+  projectId: "facilitymanagement-47470",
+  storageBucket: "facilitymanagement-47470.firebasestorage.app",
+  messagingSenderId: "638809761503",
+  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+};
+if (!window.firebaseAppsInitialized) { firebase.initializeApp(firebaseConfig); window.firebaseAppsInitialized = true; }
+const db = firebase.firestore();
+
+/* ========== Utilities ========== */
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const bg = type==='success' ? 'bg-green-600' : 'bg-red-600';
+  t.innerHTML = `<div class="${bg} text-white px-4 py-2 rounded shadow">${msg}</div>`;
+  setTimeout(()=>{ if (t.firstChild) t.removeChild(t.firstChild); }, 3500);
+}
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ========== conversions ==========
+   store base units: liquids->ml, weight->g, nos->nos
+*/
+function toBaseQty(amount, unit) {
+  if (!unit) return amount;
+  const u = unit.toLowerCase();
+  if (u === 'litre' || u === 'l') return amount * 1000;
+  if (u === 'ml') return amount;
+  if (u === 'kg') return amount * 1000;
+  if (u === 'g') return amount;
+  if (u === 'nos') return amount;
+  return amount;
+}
+function formatBaseQty(val, unit) {
+  if (val===undefined || val===null) return '-';
+  if (!unit) return `${val}`;
+  const u = unit.toLowerCase();
+  if (u === 'litre' || u === 'l') return `${(val/1000).toFixed(3)} L (${Math.round(val)} ml)`;
+  if (u === 'ml') return `${Math.round(val)} ml`;
+  if (u === 'kg' || u === 'g') {
+    if (val >= 1000) return `${(val/1000).toFixed(3)} Kg (${Math.round(val)} g)`;
+    return `${Math.round(val)} g`;
+  }
+  if (u === 'nos') return `${val} Nos`;
+  return `${val} ${unit}`;
+}
+
+/* ========== DOM refs ========== */
+const tabAdd = document.getElementById('tabAdd'), tabManage = document.getElementById('tabManage'),
+      tabCategories = document.getElementById('tabCategories'), tabSuppliers = document.getElementById('tabSuppliers');
+
+const panelAdd = document.getElementById('panelAdd'), panelManage = document.getElementById('panelManage'),
+      panelCategories = document.getElementById('panelCategories'), panelSuppliers = document.getElementById('panelSuppliers');
+
+const inpDept = document.getElementById('inpDept'), inpCategory = document.getElementById('inpCategory'),
+      inpMaterial = document.getElementById('inpMaterial'), inpContainerSize = document.getElementById('inpContainerSize'),
+      inpContainerUnit = document.getElementById('inpContainerUnit'), inpContainerCount = document.getElementById('inpContainerCount'),
+      inpMrp = document.getElementById('inpMrp'), inpSupplier = document.getElementById('inpSupplier'),
+      inpRemarks = document.getElementById('inpRemarks'), inpDate = document.getElementById('inpDate'),
+      displayTotalBase = document.getElementById('displayTotalBase'), displayTotalMrp = document.getElementById('displayTotalMrp'),
+      btnSave = document.getElementById('btnSave'), btnClear = document.getElementById('btnClear'),
+      btnAddCategory = document.getElementById('btnAddCategory'), btnAddSupplier = document.getElementById('btnAddSupplier'),
+      lastAction = document.getElementById('lastAction'), btnRefresh = document.getElementById('btnRefresh'),
+      btnCalc = document.getElementById('btnCalc');
+
+const searchBox = document.getElementById('searchBox'), filterDept = document.getElementById('filterDept'), btnReload = document.getElementById('btnReload'),
+      tblBody = document.getElementById('tblBody');
+
+const catName = document.getElementById('catName'), catDept = document.getElementById('catDept'), btnSaveCat = document.getElementById('btnSaveCat'),
+      btnClearCat = document.getElementById('btnClearCat'), catBody = document.getElementById('catBody');
+
+const sName = document.getElementById('sName'), sPhone = document.getElementById('sPhone'), sEmail = document.getElementById('sEmail'),
+      sAddress = document.getElementById('sAddress'), btnSaveSup = document.getElementById('btnSaveSup'), btnClearSup = document.getElementById('btnClearSup'),
+      supBody = document.getElementById('supBody');
+
+/* editing states */
+let editingSupplierId = null;
+let editingCategoryId = null;
+let currentEditInventoryId = null;
+
+/* ========== Init defaults ========== */
+inpDate.value = new Date().toISOString().split('T')[0];
+
+/* ========== Tab handler ========== */
+function show(tab) {
+  panelAdd.classList.add('hidden'); panelManage.classList.add('hidden'); panelCategories.classList.add('hidden'); panelSuppliers.classList.add('hidden');
+  tabAdd.classList.remove('tab-active'); tabManage.classList.remove('tab-active'); tabCategories.classList.remove('tab-active'); tabSuppliers.classList.remove('tab-active');
+  if (tab==='add'){ panelAdd.classList.remove('hidden'); tabAdd.classList.add('tab-active'); }
+  if (tab==='manage'){ panelManage.classList.remove('hidden'); tabManage.classList.add('tab-active'); loadInventory(); }
+  if (tab==='categories'){ panelCategories.classList.remove('hidden'); tabCategories.classList.add('tab-active'); loadCategories(); }
+  if (tab==='suppliers'){ panelSuppliers.classList.remove('hidden'); tabSuppliers.classList.add('tab-active'); loadSuppliers(); }
+}
+tabAdd.addEventListener('click', ()=> show('add'));
+tabManage.addEventListener('click', ()=> show('manage'));
+tabCategories.addEventListener('click', ()=> show('categories'));
+tabSuppliers.addEventListener('click', ()=> show('suppliers'));
+
+/* ========== Load categories & suppliers ==========
+   - loadCategories(selectedDept) will populate:
+     1) inpCategory with categories filtered by selectedDept (or all when null)
+     2) catBody with full category list (for management)
+*/
+async function loadCategories(selectedDept = null) {
+  inpCategory.innerHTML = '<option value="">Loading...</option>';
+  catBody.innerHTML = '<tr><td colspan="3" class="p-2">Loading...</td></tr>';
+  try {
+    const snap = await db.collection('categories').orderBy('categoryName').get();
+    // prepare full list for catBody
+    catBody.innerHTML = '';
+    const options = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      // build management table row
+      catBody.insertAdjacentHTML('beforeend', 
+        `<tr>
+          <td class="p-2">${escapeHtml(d.department || '-')}</td>
+          <td class="p-2">${escapeHtml(d.categoryName)}</td>
+          <td class="p-2">
+            <button class="px-2 py-1 bg-yellow-200 rounded" onclick="editCategory('${doc.id}')">Edit</button>
+            <button class="px-2 py-1 bg-red-400 text-white rounded" onclick="deleteCategory('${doc.id}')">Del</button>
+          </td>
+        </tr>`);
+      // collect for dropdown (but filter later)
+      options.push({ id: doc.id, name: d.categoryName, department: d.department || '' });
+    });
+    if (snap.empty) catBody.innerHTML = '<tr><td colspan="3" class="p-2">No categories</td></tr>';
+
+    // populate inpCategory filtered by selectedDept
+    inpCategory.innerHTML = '<option value="">Select category</option>';
+    options.forEach(o => {
+      if (!selectedDept || selectedDept === '' || o.department === selectedDept) {
+        inpCategory.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(o.name)}" data-id="${o.id}" data-dept="${escapeHtml(o.department)}">${escapeHtml(o.name)}</option>`);
+      }
+    });
+
+  } catch (e){ console.error(e); inpCategory.innerHTML = '<option value="">Failed</option>'; catBody.innerHTML = '<tr><td colspan="3">Load failed</td></tr>'; }
+}
+
+async function loadSuppliers() {
+  inpSupplier.innerHTML = '<option value="">Loading...</option>';
+  supBody.innerHTML = '<tr><td colspan="3" class="p-2">Loading...</td></tr>';
+  try {
+    const snap = await db.collection('suppliers').orderBy('supplierName').get();
+    inpSupplier.innerHTML = '<option value="">Select supplier</option>';
+    supBody.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      inpSupplier.insertAdjacentHTML('beforeend', `<option value="${doc.id}">${escapeHtml(d.supplierName)}</option>`);
+      supBody.insertAdjacentHTML('beforeend', `<tr><td class="p-2">${escapeHtml(d.supplierName)}</td><td class="p-2">${escapeHtml(d.phone||'')}</td><td class="p-2"><button class="px-2 py-1 bg-yellow-200 rounded" onclick="editSupplier('${doc.id}')">Edit</button> <button class="px-2 py-1 bg-red-400 text-white rounded" onclick="deleteSupplier('${doc.id}')">Del</button></td></tr>`);
+    });
+    if (snap.empty) supBody.innerHTML = '<tr><td colspan="3" class="p-2">No suppliers</td></tr>';
+  } catch (e){ console.error(e); inpSupplier.innerHTML = '<option value="">Failed</option>'; supBody.innerHTML = '<tr><td colspan="3">Load failed</td></tr>'; }
+}
+
+/* ========== Add / Receive material ==========
+   - If existing (materialName + dept + category) -> update receivedQty (base units)
+   - Else create new doc.
+*/
+async function saveMaterial() {
+  const department = inpDept.value;
+  const category = inpCategory.value;
+  const materialName = inpMaterial.value.trim();
+  const containerSize = parseFloat(inpContainerSize.value) || 0;
+  const containerUnit = inpContainerUnit.value;
+  const containerCount = parseFloat(inpContainerCount.value) || 0;
+  const mrp = parseFloat(inpMrp.value) || 0;
+  const supplierId = inpSupplier.value || '';
+  const remarks = inpRemarks.value.trim();
+  const receivedDate = inpDate.value || new Date().toISOString().split('T')[0];
+
+  if (!department || !category || !materialName || !containerSize || !containerCount) {
+    toast('Please fill required fields', 'error'); return;
+  }
+
+  const perContainerBase = toBaseQty(containerSize, containerUnit);
+  const addBase = Math.round(perContainerBase * containerCount * 10000)/10000; // base units to add
+  const totalMrp = (mrp * containerCount) || 0;
+
+  try {
+    const q = await db.collection('inventory')
+      .where('materialName','==',materialName)
+      .where('department','==',department)
+      .where('category','==',category)
+      .limit(1).get();
+
+    if (!q.empty) {
+      // update existing
+      const doc = q.docs[0];
+      const data = doc.data();
+      const newBase = Math.round(((parseFloat(data.receivedQty || 0) + addBase) + Number.EPSILON) * 10000) / 10000;
+      await db.collection('inventory').doc(doc.id).update({
+        receivedQty: newBase,
+        mrp: mrp || data.mrp || 0,
+        totalMrp: (parseFloat(data.totalMrp || 0) + totalMrp),
+        supplierId: supplierId || data.supplierId || '',
+        supplierName: supplierId ? (await getSupplierName(supplierId)) : (data.supplierName || ''),
+        remarks: remarks || data.remarks || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast('Stock updated for existing item');
+      lastAction.innerText = `Updated ${materialName} (+${addBase} base units)`;
+    } else {
+      // create new
+      const supplierName = supplierId ? await getSupplierName(supplierId) : '';
+      await db.collection('inventory').add({
+        materialName, category, department,
+        containerSize, containerUnit,
+        containerCount,
+        receivedQty: addBase,
+        mrp, totalMrp,
+        supplierId, supplierName,
+        remarks, receivedDate,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast('New material added');
+      lastAction.innerText = `Added ${materialName} (${department}) — ${addBase} base units`;
+    }
+    clearAddForm();
+    loadInventory();
+  } catch (e) {
+    console.error(e); toast('Save failed', 'error');
+  }
+}
+async function getSupplierName(id) { if(!id) return ''; try { const d = await db.collection('suppliers').doc(id).get(); return d.exists ? d.data().supplierName : ''; } catch(e){return '';} }
+
+function clearAddForm(){
+  inpDept.value=''; inpCategory.value=''; inpMaterial.value=''; inpContainerSize.value=''; inpContainerUnit.value='Litre';
+  inpContainerCount.value=1; inpMrp.value=''; inpSupplier.value=''; inpRemarks.value=''; inpDate.value = new Date().toISOString().split('T')[0];
+  displayTotalBase.innerText='—'; displayTotalMrp.innerText='—';
+  btnSave.innerText = 'Save / Receive';
+  btnSave.onclick = saveMaterial;
+  currentEditInventoryId = null;
+}
+
+/* calculate totals locally */
+function recalcTotals() {
+  const sz = parseFloat(inpContainerSize.value) || 0;
+  const unit = inpContainerUnit.value;
+  const cnt = parseFloat(inpContainerCount.value) || 0;
+  const perBase = toBaseQty(sz, unit);
+  const totalBase = perBase * cnt;
+  displayTotalBase.innerText = formatBaseQty(totalBase, unit);
+  displayTotalMrp.innerText = ( (parseFloat(inpMrp.value)||0) * cnt ).toFixed(2);
+}
+
+/* ========== Inventory list (manage) ========== */
+async function loadInventory() {
+  tblBody.innerHTML = '<tr><td colspan="12" class="p-2">Loading...</td></tr>';
+  try {
+    const snap = await db.collection('inventory').orderBy('materialName').get();
+    const rows = [];
+    snap.forEach(doc => { const d = doc.data(); d._id = doc.id; rows.push(d); });
+
+    const q = (searchBox.value || '').toLowerCase();
+    const fDept = filterDept.value;
+
+    const filtered = rows.filter(r=>{
+      if (fDept && r.department !== fDept) return false;
+      if (!q) return true;
+      return (r.materialName||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.supplierName||'').toLowerCase().includes(q);
+    });
+
+    if (!filtered.length) {
+      tblBody.innerHTML = '<tr><td colspan="12" class="p-2">No items found</td></tr>'; return;
+    }
+    tblBody.innerHTML = '';
+    let i=1;
+    for (const r of filtered) {
+      const perContainerBase = toBaseQty(r.containerSize || 0, r.containerUnit || r.containerUnit);
+      const availableBase = parseFloat(r.receivedQty || 0);
+      const containersRemaining = perContainerBase ? Math.floor(availableBase / perContainerBase) : '—';
+      const availableReadable = formatBaseQty(availableBase, r.containerUnit || r.containerUnit);
+      const containerDesc = `${r.containerSize || '-'} ${r.containerUnit || ''}`;
+      const mrpDisplay = r.mrp ? `₹${r.mrp}` : '-';
+      tblBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td class="p-2">${i++}</td>
+          <td class="p-2">${escapeHtml(r.materialName||'')}</td>
+          <td class="p-2 text-center">${escapeHtml(r.category||'')}</td>
+          <td class="p-2 text-center">${escapeHtml(r.department||'')}</td>
+          <td class="p-2">${availableReadable}</td>
+          <td class="p-2 text-center">${containersRemaining}</td>
+          <td class="p-2 text-center">${escapeHtml(containerDesc)}</td>
+          <td class="p-2 text-center">${mrpDisplay}</td>
+          <td class="p-2">${escapeHtml(r.supplierName||'')}</td>
+          <td class="p-2 text-center">${escapeHtml(r.receivedDate||'')}</td>
+          <td class="p-2">${escapeHtml(r.remarks||'')}</td>
+          <td class="p-2">
+            <div class="flex gap-2">
+              <button class="px-2 py-1 bg-yellow-200 rounded" onclick="openEdit('${r._id}')">Edit</button>
+              <button class="px-2 py-1 bg-blue-200 rounded" onclick="receiveMore('${r._id}')">Receive</button>
+              <button class="px-2 py-1 bg-red-500 text-white rounded" onclick="deleteItem('${r._id}')">Delete</button>
+            </div>
+          </td>
+        </tr>`);
+    }
+  } catch(e) { console.error(e); tblBody.innerHTML = '<tr><td colspan="12">Error loading</td></tr>'; }
+}
+
+/* ========== Edit item (prefill add form for edit) ========== */
+async function openEdit(id) {
+  try {
+    const doc = await db.collection('inventory').doc(id).get();
+    if (!doc.exists) { toast('Item not found','error'); return; }
+    const d = doc.data();
+    show('add');
+    inpDept.value = d.department || '';
+    // load categories filtered by department, then set category
+    await loadCategories(d.department || '');
+    inpCategory.value = d.category || '';
+    inpMaterial.value = d.materialName || '';
+    inpContainerSize.value = d.containerSize || '';
+    inpContainerUnit.value = d.containerUnit || 'Litre';
+    inpContainerCount.value = d.containerCount || 1;
+    inpMrp.value = d.mrp || '';
+    inpSupplier.value = d.supplierId || '';
+    inpRemarks.value = d.remarks || '';
+    inpDate.value = d.receivedDate || new Date().toISOString().split('T')[0];
+    recalcTotals();
+    btnSave.innerText = 'Update Item';
+    currentEditInventoryId = id;
+    btnSave.onclick = async function updateHandler() {
+      const updates = {
+        department: inpDept.value, category: inpCategory.value, materialName: inpMaterial.value.trim(),
+        containerSize: parseFloat(inpContainerSize.value) || 0, containerUnit: inpContainerUnit.value,
+        containerCount: parseFloat(inpContainerCount.value) || 1, mrp: parseFloat(inpMrp.value) || 0,
+        supplierId: inpSupplier.value || '', supplierName: inpSupplier.options[inpSupplier.selectedIndex] ? inpSupplier.options[inpSupplier.selectedIndex].text : '',
+        remarks: inpRemarks.value, receivedDate: inpDate.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      try {
+        await db.collection('inventory').doc(id).update(updates);
+        toast('Item updated');
+        btnSave.innerText = 'Save / Receive';
+        btnSave.onclick = saveMaterial;
+        loadInventory();
+        clearAddForm();
+      } catch (e){ console.error(e); toast('Update failed','error'); }
+    };
+  } catch(e){ console.error(e); toast('Open edit failed','error'); }
+}
+
+/* ========== Receive more (prompt for containers) ========== */
+async function receiveMore(id) {
+  const v = prompt('Enter number of containers received (e.g., 2 or 0.5):', '1');
+  if (!v) return;
+  const cnt = parseFloat(v);
+  if (!cnt || cnt <= 0) { toast('Invalid count','error'); return; }
+  try {
+    await db.runTransaction(async tx => {
+      const ref = db.collection('inventory').doc(id);
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw 'Not found';
+      const doc = snap.data();
+      const perBase = toBaseQty(doc.containerSize || 0, doc.containerUnit || 'Litre');
+      const addBase = perBase * cnt;
+      const newQty = Math.round(((parseFloat(doc.receivedQty || 0) + addBase) + Number.EPSILON) * 10000) / 10000;
+      tx.update(ref, { receivedQty: newQty, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    });
+    toast('Stock received and updated');
+    loadInventory();
+  } catch(e){ console.error(e); toast('Receive failed','error'); }
+}
+
+/* ========== Delete item ========== */
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  try {
+    await db.collection('inventory').doc(id).delete();
+    toast('Deleted');
+    loadInventory();
+  } catch(e){ console.error(e); toast('Delete failed','error'); }
+}
+
+/* ========== Categories CRUD ========== */
+async function saveCategory() {
+  const name = catName.value.trim();
+  const dept = catDept.value;
+  if (!name || !dept) { toast('Select Department & enter Category', 'error'); return; }
+  if (editingCategoryId) {
+    try {
+      await db.collection('categories').doc(editingCategoryId).update({ categoryName: name, department: dept, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      toast('Category updated'); editingCategoryId = null; catName.value = ''; catDept.value = '';
+      loadCategories();
+    } catch(e){ console.error(e); toast('Update fail','error'); }
+  } else {
+    try {
+      // avoid dup (same name + dept)
+      const q = await db.collection('categories').where('categoryName','==',name).where('department','==',dept).limit(1).get();
+      if (!q.empty) { toast('Category exists for this department','error'); return; }
+      await db.collection('categories').add({ categoryName: name, department: dept, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      toast('Category added'); catName.value = ''; catDept.value = '';
+      loadCategories();
+    } catch(e){ console.error(e); toast('Save failed','error'); }
+  }
+}
+async function editCategory(id) {
+  const doc = await db.collection('categories').doc(id).get();
+  if (!doc.exists) return;
+  const d = doc.data();
+  catName.value = d.categoryName || '';
+  catDept.value = d.department || '';
+  editingCategoryId = id;
+  show('categories');
+}
+async function deleteCategory(id) {
+  if (!confirm('Delete category?')) return;
+  try { await db.collection('categories').doc(id).delete(); toast('Deleted'); loadCategories(); } catch(e){console.error(e); toast('Delete fail','error'); }
+}
+
+/* ========== Suppliers CRUD ========== */
+async function saveSupplier() {
+  const name = sName.value.trim();
+  if (!name) { toast('Supplier name required','error'); return; }
+  const data = { supplierName: name, phone: sPhone.value.trim(), email: sEmail.value.trim(), address: sAddress.value.trim(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    if (editingSupplierId) {
+      await db.collection('suppliers').doc(editingSupplierId).update(data);
+      toast('Supplier updated'); editingSupplierId = null;
+    } else {
+      await db.collection('suppliers').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      toast('Supplier added');
+    }
+    sName.value=''; sPhone.value=''; sEmail.value=''; sAddress.value=''; loadSuppliers();
+  } catch(e){ console.error(e); toast('Save failed','error'); }
+}
+async function editSupplier(id) {
+  const doc = await db.collection('suppliers').doc(id).get();
+  if (!doc.exists) return;
+  const d = doc.data(); sName.value=d.supplierName||''; sPhone.value=d.phone||''; sEmail.value=d.email||''; sAddress.value=d.address||''; editingSupplierId = id; show('suppliers');
+}
+async function deleteSupplier(id) {
+  if (!confirm('Delete supplier?')) return;
+  try { await db.collection('suppliers').doc(id).delete(); toast('Deleted'); loadSuppliers(); } catch(e){console.error(e); toast('Delete fail','error'); }
+}
+
+/* ========== Event wiring ========== */
+btnSave.addEventListener('click', saveMaterial);
+btnClear.addEventListener('click', clearAddForm);
+inpContainerSize.addEventListener('input', recalcTotals);
+inpContainerUnit.addEventListener('change', recalcTotals);
+inpContainerCount.addEventListener('input', recalcTotals);
+inpMrp.addEventListener('input', recalcTotals);
+btnAddCategory.addEventListener('click', ()=>{ show('categories'); catName.focus(); });
+btnAddSupplier.addEventListener('click', ()=>{ show('suppliers'); sName.focus(); });
+btnRefresh.addEventListener('click', ()=>{ loadCategories(inpDept.value); loadSuppliers(); loadInventory(); toast('Refreshed'); });
+btnCalc.addEventListener('click', recalcTotals);
+
+searchBox.addEventListener('input', ()=> loadInventory());
+filterDept.addEventListener('change', ()=> loadInventory());
+btnReload.addEventListener('click', ()=> loadInventory());
+
+btnSaveCat.addEventListener('click', saveCategory);
+btnClearCat.addEventListener('click', ()=>{ catName.value=''; catDept.value=''; editingCategoryId=null; loadCategories(); });
+
+btnSaveSup.addEventListener('click', saveSupplier);
+btnClearSup.addEventListener('click', ()=>{ sName.value=''; sPhone.value=''; sEmail.value=''; sAddress.value=''; editingSupplierId=null; loadSuppliers(); });
+
+document.getElementById('btnLogout').addEventListener('click', ()=>{ localStorage.removeItem('supervisorName'); toast('Logged out'); setTimeout(()=>location.href='index.html',600); });
+
+/* filter categories automatically when department changes in Add Material form */
+inpDept.addEventListener('change', async () => {
+  await loadCategories(inpDept.value);
+});
+
+/* ========== Initial load ========== */
+(async function init(){
+  inpDate.value = new Date().toISOString().split('T')[0];
+  show('add');
+  await loadCategories();      // load all categories into management & dropdown
+  await loadSuppliers();
+  await loadInventory();
+})();
+</script>
+</body>
+</html>
