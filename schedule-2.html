@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Schedule — Admin Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: #f6f9fc; margin: 0; padding: 0; color: #333; }
+
+    header {
+      background: linear-gradient(135deg, #006666, #009999);
+      color: white; text-align: center;
+      padding: 15px 20px; font-size: 22px; font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    main { max-width: 980px; margin: 20px auto; padding: 0 15px 40px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #333; color: #fff; padding: 10px 22px; border-radius: 8px;
+      font-size: 14px; z-index: 9999; opacity: 0; transition: all .35s ease;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { background: #006666; }
+    #toast.error   { background: #e57373; }
+
+    /* ── Type tabs ── */
+    .type-tabs { display: flex; gap: 0; margin-bottom: 18px; border-radius: 8px; overflow: hidden; border: 1.5px solid #009999; }
+    .type-tab {
+      flex: 1; padding: 10px; text-align: center; cursor: pointer;
+      font-weight: 600; font-size: 14px; background: #fff; color: #009999;
+      transition: all .2s; border: none;
+    }
+    .type-tab.active { background: #006666; color: #fff; }
+
+    .card {
+      background: white; padding: 24px 28px; border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06); margin-bottom: 20px;
+    }
+    h2 { margin: 0 0 16px; color: #006666; font-weight: 600; font-size: 18px; }
+
+    label { display: block; margin-top: 13px; font-weight: 500; font-size: 14px; }
+    input, select, textarea {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border-radius: 7px; border: 1px solid #ccc; font-size: 14px; font-family: 'Poppins', sans-serif;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #009999; box-shadow: 0 0 0 3px rgba(0,153,153,.1); }
+
+    .vendor-tag {
+      display: inline-block; background: #e0f5f5; color: #006666;
+      padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    .days-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .day {
+      background: #eaf5f5; border-radius: 20px; padding: 6px 13px;
+      border: 1px solid #009999; cursor: pointer; font-size: 13px; transition: .2s;
+    }
+    .day.active { background: #009999; color: white; }
+
+    .bimonthly-dates { display: flex; gap: 12px; margin-top: 8px; }
+    .bimonthly-dates input { flex: 1; }
+
+    .btn { background: #006666; color: white; border: none; border-radius: 7px; padding: 10px 18px; font-size: 15px; cursor: pointer; transition: background .25s; }
+    .btn:hover { background: #009999; }
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .btn-seed { background: #f0a500; }
+    .btn-seed:hover { background: #e09400; }
+    .btn-cancel { background: #aaa; }
+    .btn-cancel:hover { background: #888; }
+
+    /* ── Filter row ── */
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .filter-row select { width: auto; min-width: 160px; }
+    .filter-row label { margin: 0; font-size: 14px; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: left; vertical-align: middle; }
+    th { background: #006666; color: white; text-transform: uppercase; font-size: 12px; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .no-data { text-align: center; padding: 18px; color: #777; }
+
+    .badge {
+      display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 600;
+    }
+    .badge-vendor { background: #e0f0ff; color: #1a5fa8; }
+    .badge-internal { background: #e0f5f0; color: #006666; }
+    .badge-freq { background: #f3f3f3; color: #555; }
+
+    .actions button { padding: 5px 10px; font-size: 12px; border-radius: 5px; margin: 2px; border: none; cursor: pointer; }
+    .edit-btn { background: #ffb74d; color: #fff; }
+    .edit-btn:hover { background: #ffa726; }
+    .delete-btn { background: #e57373; color: #fff; }
+    .delete-btn:hover { background: #ef5350; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .card { padding: 15px; }
+      .btn-row { flex-direction: column; }
+      .btn { width: 100%; }
+      th, td { font-size: 12px; padding: 7px 8px; }
+    }
+  </style>
+</head>
+<body>
+<header>🗓️ Activity Schedule — Admin Panel</header>
+
+<div id="toast"></div>
+
+<main>
+  <!-- ── Form Card ── -->
+  <div class="card">
+    <h2 id="formTitle">➕ Create Schedule</h2>
+
+    <!-- Activity Type Tabs -->
+    <div class="type-tabs">
+      <button class="type-tab active" id="tabInternal" onclick="switchType('internal')">🏢 Internal Activity</button>
+      <button class="type-tab" id="tabVendor" onclick="switchType('vendor')">🚚 Vendor Activity</button>
+    </div>
+
+    <form id="scheduleForm">
+      <!-- Internal: Department -->
+      <div id="deptSection">
+        <label>Department:</label>
+        <div style="display:flex;gap:10px;">
+          <select id="department" style="flex:1;">
+            <option value="">Select Department</option>
+          </select>
+          <button type="button" class="btn" id="addDeptBtn" style="padding:10px 14px;">+ Add</button>
+        </div>
+      </div>
+
+      <!-- Vendor: Vendor Name -->
+      <div id="vendorSection" class="hidden">
+        <label>Vendor Name: <span class="vendor-tag">Vendor</span></label>
+        <select id="vendorName">
+          <option value="">Select Vendor</option>
+          <option value="Pest Control Services">Pest Control Services</option>
+          <option value="Natura Bia Wall Service">Natura Bia Wall Service</option>
+          <option value="Bonita Indoor Plants">Bonita Indoor Plants</option>
+          <option value="Coffee Machine Service">Coffee Machine Service</option>
+          <option value="Hygiene Services">Hygiene Services</option>
+          <option value="Other">Other (type below)</option>
+        </select>
+        <input type="text" id="vendorNameCustom" class="hidden" placeholder="Enter vendor name" style="margin-top:8px;" />
+      </div>
+
+      <label>Activity Name:</label>
+      <input type="text" id="activityName" placeholder="e.g. Dustbin Cleaning" required />
+
+      <label>Frequency:</label>
+      <select id="frequency" required onchange="onFreqChange()">
+        <option value="">Select Frequency</option>
+        <option value="Daily">Daily</option>
+        <option value="Weekly">Weekly</option>
+        <option value="Bimonthly">Bimonthly (Twice a Month)</option>
+        <option value="Monthly">Monthly</option>
+        <option value="Quarterly">Quarterly</option>
+      </select>
+
+      <!-- Weekly days (only for Internal activities) -->
+      <div id="daysSection" class="hidden">
+        <label>Recurring Days: <span id="daysNote" style="font-size:12px;color:#888;font-weight:400;"></span></label>
+        <div id="vendorWeeklyNote" class="hidden" style="background:#e8f8f5;border:1px solid #b2dfdb;border-radius:8px;padding:10px 14px;font-size:13px;color:#00695c;">
+          📅 <b>Weekly vendor</b> — Will appear on the supervisor dashboard every day of the week
+          until the visit is confirmed. No specific day needed.
+        </div>
+        <div id="internalDayPicker">
+          <div class="days-container" id="daysContainer">
+            <div class="day">Monday</div><div class="day">Tuesday</div>
+            <div class="day">Wednesday</div><div class="day">Thursday</div>
+            <div class="day">Friday</div><div class="day">Saturday</div>
+            <div class="day">Sunday</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly/Quarterly single date -->
+      <div id="singleDateSection" class="hidden">
+        <label>Scheduled Date:</label>
+        <input type="date" id="nextDate" />
+      </div>
+
+      <!-- Bimonthly info (no fixed date — vendor comes anytime in the period) -->
+      <div id="bimonthlySection" class="hidden">
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px;color:#7a5c00;">
+          📅 <b>Twice a month</b> — The vendor will appear on the supervisor dashboard every day
+          of the <b>1st–15th</b> and again every day of the <b>16th–end</b> of each month,
+          until the supervisor confirms the visit for that period.
+          No fixed date needed.
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn" id="saveBtn">💾 Save Schedule</button>
+        <button type="button" class="btn btn-cancel hidden" id="cancelEditBtn" onclick="cancelEdit()">✕ Cancel Edit</button>
+        <button type="button" class="btn btn-seed" id="seedVendorBtn" onclick="seedVendorActivities()">🚀 Seed Vendor Activities</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── List Card ── -->
+  <div class="card">
+    <h2>📋 Existing Schedules</h2>
+    <div class="filter-row">
+      <label>Filter:</label>
+      <select id="filterType" onchange="renderSchedules()">
+        <option value="All">All Types</option>
+        <option value="internal">Internal Only</option>
+        <option value="vendor">Vendor Only</option>
+      </select>
+      <select id="filterDept" onchange="renderSchedules()">
+        <option value="All">All Departments</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Type</th><th>Dept / Vendor</th>
+            <th>Activity</th><th>Frequency</th><th>Days / Dates</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="scheduleTableBody">
+          <tr><td colspan="7" class="no-data">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+    authDomain: "facilitymanagement-47470.firebaseapp.com",
+    projectId: "facilitymanagement-47470",
+    storageBucket: "facilitymanagement-47470.firebasestorage.app",
+    messagingSenderId: "638809761503",
+    appId: "1:638809761503:web:1a15443eeeee2414aaab6a",
+  };
+  if (!window.firebaseAppsInitialized) {
+    firebase.initializeApp(firebaseConfig);
+    window.firebaseAppsInitialized = true;
+  }
+  const db = firebase.firestore();
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let editId = null;
+  let currentType = 'internal';
+  let allSchedulesCache = [];
+  let unsubscribe = null;
+  const defaultDepartments = ["M&E", "H&K", "Security", "EHS"];
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show ${type}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 3200);
+  }
+
+  // ── Type Switch ───────────────────────────────────────────────────────────
+  function switchType(type) {
+    currentType = type;
+    document.getElementById('tabInternal').classList.toggle('active', type === 'internal');
+    document.getElementById('tabVendor').classList.toggle('active', type === 'vendor');
+    document.getElementById('deptSection').classList.toggle('hidden', type !== 'internal');
+    document.getElementById('vendorSection').classList.toggle('hidden', type !== 'vendor');
+    document.getElementById('seedVendorBtn').classList.toggle('hidden', type !== 'vendor');
+
+    // Auto-fill vendor name into activity when vendor selected
+    if (type === 'vendor') {
+      const vs = document.getElementById('vendorName');
+      autoFillVendorActivity(vs.value);
+    }
+  }
+
+  document.getElementById('vendorName').addEventListener('change', function() {
+    const isOther = this.value === 'Other';
+    document.getElementById('vendorNameCustom').classList.toggle('hidden', !isOther);
+    if (!isOther) autoFillVendorActivity(this.value);
+  });
+
+  function autoFillVendorActivity(vendor) {
+    if (vendor && vendor !== 'Other') {
+      document.getElementById('activityName').value = vendor;
+      // Auto-set frequency for known vendors
+      const freqMap = {
+        'Pest Control Services': 'Weekly',
+        'Natura Bia Wall Service': 'Weekly',
+        'Bonita Indoor Plants': 'Weekly',
+        'Coffee Machine Service': 'Bimonthly',
+        'Hygiene Services': 'Bimonthly',
+      };
+      if (freqMap[vendor]) {
+        document.getElementById('frequency').value = freqMap[vendor];
+        onFreqChange();
+      }
+    }
+  }
+
+  // ── Frequency Change ──────────────────────────────────────────────────────
+  function onFreqChange() {
+    const freq = document.getElementById('frequency').value;
+    const isVendor = currentType === 'vendor';
+
+    document.getElementById('daysSection').classList.toggle('hidden', freq !== 'Weekly');
+    document.getElementById('singleDateSection').classList.toggle('hidden',
+      !['Monthly','Quarterly'].includes(freq) || isVendor);
+    document.getElementById('bimonthlySection').classList.toggle('hidden', freq !== 'Bimonthly');
+
+    // For weekly: show info note for vendor, day picker for internal
+    if (freq === 'Weekly') {
+      const vendorNote = document.getElementById('vendorWeeklyNote');
+      const dayPicker  = document.getElementById('internalDayPicker');
+      if (vendorNote && dayPicker) {
+        vendorNote.classList.toggle('hidden', !isVendor);
+        dayPicker.classList.toggle('hidden', isVendor);
+      }
+    }
+  }
+
+  // ── Days Toggle ───────────────────────────────────────────────────────────
+  document.getElementById('daysContainer').addEventListener('click', e => {
+    if (e.target.classList.contains('day')) e.target.classList.toggle('active');
+  });
+
+  // ── Departments ───────────────────────────────────────────────────────────
+  const deptSelect = document.getElementById('department');
+  const filterDept = document.getElementById('filterDept');
+
+  async function loadDepartments() {
+    defaultDepartments.forEach(addDeptOption);
+    try {
+      const snap = await db.collection('departments').get();
+      snap.forEach(doc => { if (doc.data().name) addDeptOption(doc.data().name.trim()); });
+    } catch(e) { console.error(e); }
+  }
+
+  function addDeptOption(name) {
+    if (!name) return;
+    if (![...deptSelect.options].some(o => o.value === name)) deptSelect.add(new Option(name, name));
+    if (![...filterDept.options].some(o => o.value === name)) filterDept.add(new Option(name, name));
+  }
+
+  document.getElementById('addDeptBtn').addEventListener('click', async () => {
+    const n = prompt('Enter new department name:');
+    if (!n?.trim()) return;
+    try {
+      await db.collection('departments').add({ name: n.trim() });
+      addDeptOption(n.trim());
+      deptSelect.value = n.trim();
+      toast('✅ Department added!');
+    } catch(e) { toast('❌ Could not add department', 'error'); }
+  });
+
+  // ── Form Submit ───────────────────────────────────────────────────────────
+  document.getElementById('scheduleForm').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const freq = document.getElementById('frequency').value;
+    const activityName = document.getElementById('activityName').value.trim();
+    if (!activityName) { toast('Enter activity name', 'error'); return; }
+    if (!freq) { toast('Select frequency', 'error'); return; }
+
+    // Build vendor / department value
+    let vendorValue = '', department = '';
+    if (currentType === 'vendor') {
+      const vs = document.getElementById('vendorName').value;
+      vendorValue = vs === 'Other' ? document.getElementById('vendorNameCustom').value.trim() : vs;
+      if (!vendorValue) { toast('Select or enter vendor name', 'error'); return; }
+      department = 'Vendor';
+    } else {
+      department = deptSelect.value;
+      if (!department) { toast('Select a department', 'error'); return; }
+    }
+
+    const data = {
+      activityType: currentType,          // 'internal' | 'vendor'
+      department,
+      vendorName: vendorValue || null,
+      activityName,
+      frequency: freq,
+      recurringDays: [...document.querySelectorAll('.day.active')].map(d => d.textContent),
+      nextDate: document.getElementById('nextDate').value || null,
+      // bimonthly has no fixed dates — period logic handles display
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    if (!editId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+    try {
+      if (editId) {
+        await db.collection('activitySchedules').doc(editId).update(data);
+        toast('✅ Schedule updated!');
+        cancelEdit();
+      } else {
+        await db.collection('activitySchedules').add(data);
+        toast('✅ Schedule created!');
+      }
+      resetForm();
+    } catch(err) {
+      console.error(err);
+      toast('❌ Error saving schedule', 'error');
+    }
+  });
+
+  function resetForm() {
+    document.getElementById('scheduleForm').reset();
+    document.querySelectorAll('.day.active').forEach(d => d.classList.remove('active'));
+    document.getElementById('daysSection').classList.add('hidden');
+    document.getElementById('singleDateSection').classList.add('hidden');
+    document.getElementById('bimonthlySection').classList.add('hidden');
+    document.getElementById('vendorNameCustom').classList.add('hidden');
+  }
+
+  function cancelEdit() {
+    editId = null;
+    document.getElementById('formTitle').textContent = '➕ Create Schedule';
+    document.getElementById('saveBtn').textContent = '💾 Save Schedule';
+    document.getElementById('cancelEditBtn').classList.add('hidden');
+    switchType('internal');
+    resetForm();
+  }
+
+  // ── Seed Vendor Activities ────────────────────────────────────────────────
+  async function seedVendorActivities() {
+    if (!confirm('This will add the 5 standard vendor activities. Continue?')) return;
+    const vendors = [
+      { vendorName: 'Pest Control Services',  activityName: 'Pest Control Services',  frequency: 'Weekly' },
+      { vendorName: 'Natura Bia Wall Service', activityName: 'Natura Bia Wall Service', frequency: 'Weekly' },
+      { vendorName: 'Bonita Indoor Plants',    activityName: 'Bonita Indoor Plants',    frequency: 'Weekly' },
+      { vendorName: 'Coffee Machine Service',  activityName: 'Coffee Machine Service',  frequency: 'Bimonthly' },
+      { vendorName: 'Hygiene Services',        activityName: 'Hygiene Services',        frequency: 'Bimonthly' },
+    ];
+    try {
+      const batch = db.batch();
+      vendors.forEach(v => {
+        const ref = db.collection('activitySchedules').doc();
+        batch.set(ref, {
+          activityType: 'vendor',
+          department: 'Vendor',
+          vendorName: v.vendorName,
+          activityName: v.activityName,
+          frequency: v.frequency,
+          recurringDays: [],   // vendors have no fixed day — period logic used
+          nextDate: null,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      toast('✅ 5 vendor activities seeded!');
+    } catch(err) {
+      console.error(err);
+      toast('❌ Seed failed', 'error');
+    }
+  }
+
+  // ── Realtime Listener ─────────────────────────────────────────────────────
+  function startListening() {
+    if (unsubscribe) unsubscribe();
+    unsubscribe = db.collection('activitySchedules').orderBy('createdAt', 'desc')
+      .onSnapshot(snap => {
+        allSchedulesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderSchedules();
+      }, err => {
+        console.error(err);
+        document.getElementById('scheduleTableBody').innerHTML =
+          `<tr><td colspan="7" class="no-data">Error loading. Check console.</td></tr>`;
+      });
+  }
+
+  function renderSchedules() {
+    const typeFilter = document.getElementById('filterType').value;
+    const deptFilter = document.getElementById('filterDept').value;
+    const tbody = document.getElementById('scheduleTableBody');
+
+    let list = allSchedulesCache;
+    if (typeFilter !== 'All') list = list.filter(s => s.activityType === typeFilter);
+    if (deptFilter !== 'All') list = list.filter(s => (s.department || '') === deptFilter);
+
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="no-data">No schedules found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    list.forEach((s, i) => {
+      const isVendor = s.activityType === 'vendor';
+      const typeLabel = isVendor
+        ? `<span class="badge badge-vendor">Vendor</span>`
+        : `<span class="badge badge-internal">Internal</span>`;
+      const deptVendor = isVendor ? (s.vendorName || 'Vendor') : (s.department || '-');
+
+      let daysStr = '-';
+      if (s.frequency === 'Weekly')     daysStr = (s.recurringDays || []).join(', ') || '-';
+      if (s.frequency === 'Bimonthly')  daysStr = [s.biDate1, s.biDate2].filter(Boolean).join(' & ') || 'Dates TBD';
+      if (['Monthly','Quarterly'].includes(s.frequency)) daysStr = s.nextDate || '-';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${typeLabel}</td>
+        <td>${escapeHtml(deptVendor)}</td>
+        <td>${escapeHtml(s.activityName || '-')}</td>
+        <td><span class="badge badge-freq">${escapeHtml(s.frequency || '-')}</span></td>
+        <td style="font-size:12px;">${escapeHtml(daysStr)}</td>
+        <td class="actions">
+          <button class="edit-btn" data-id="${s.id}">Edit</button>
+          <button class="delete-btn" data-id="${s.id}">Delete</button>
+        </td>`;
+      tbody.appendChild(row);
+    });
+  }
+
+  // ── Edit / Delete ─────────────────────────────────────────────────────────
+  document.getElementById('scheduleTableBody').addEventListener('click', async e => {
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    if (e.target.classList.contains('edit-btn')) {
+      const s = allSchedulesCache.find(x => x.id === id);
+      if (!s) return;
+
+      editId = id;
+      const type = s.activityType || 'internal';
+      switchType(type);
+
+      if (type === 'vendor') {
+        const vs = document.getElementById('vendorName');
+        if ([...vs.options].some(o => o.value === s.vendorName)) vs.value = s.vendorName;
+        else { vs.value = 'Other'; document.getElementById('vendorNameCustom').value = s.vendorName; document.getElementById('vendorNameCustom').classList.remove('hidden'); }
+      } else {
+        deptSelect.value = s.department || '';
+      }
+
+      document.getElementById('activityName').value = s.activityName || '';
+      document.getElementById('frequency').value = s.frequency || '';
+      onFreqChange();
+      document.querySelectorAll('.day').forEach(d => d.classList.toggle('active', (s.recurringDays || []).includes(d.textContent)));
+      document.getElementById('nextDate').value = s.nextDate || '';
+      // bimonthly: no date fields to restore
+
+      document.getElementById('formTitle').textContent = '✏️ Edit Schedule';
+      document.getElementById('saveBtn').textContent = '💾 Update Schedule';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (e.target.classList.contains('delete-btn')) {
+      if (!confirm('Delete this schedule?')) return;
+      try {
+        await db.collection('activitySchedules').doc(id).delete();
+        toast('🗑️ Deleted');
+      } catch(e) { toast('❌ Delete failed', 'error'); }
+    }
+  });
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  switchType('internal'); // start on internal tab
+  loadDepartments().then(() => startListening());
+</script>
+</body>
+</html>
