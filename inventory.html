@@ -3,746 +3,1541 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin Inventory v2.0</title>
-
-<!-- Tailwind CDN -->
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<title>Admin — Inventory Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <style>
-  body { font-family: Inter, Poppins, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f4f7f9; color:#0f172a; }
-  .tab { cursor:pointer; padding:.5rem 1rem; border-radius:.5rem; }
-  .tab-active { background: #006666; color: white; }
-  .card { background: white; border-radius:12px; box-shadow:0 6px 18px rgba(2,6,23,0.06); }
-  .small-muted { color:#475569; font-size:.92rem }
-  .table-head { background:#e6fffa; color:#064e3b; font-weight:600; }
-  .toast { position: fixed; right: 16px; bottom: 16px; z-index:60; }
-  .table-wrap { overflow-x:auto; }
+/* ═══════════════════════════════════════════════════════════
+   PROJECT DESIGN SYSTEM — matches kpi-style.css tokens
+═══════════════════════════════════════════════════════════ */
+:root {
+  --t9:#0f4c4c; --t7:#0d6b6b; --t5:#0d9488; --t4:#14b8a6; --t1:#ccfbf1; --t0:#f0fdfa;
+  --ok:#16a34a;  --ok-l:#dcfce7;
+  --warn:#d97706; --warn-l:#fef3c7;
+  --danger:#dc2626; --danger-l:#fee2e2;
+  --blue:#1d4ed8;  --blue-l:#dbeafe;
+  --purple:#7c3aed; --purple-l:#ede9fe;
+  --gray9:#0f172a; --gray7:#334155; --gray5:#64748b;
+  --gray3:#cbd5e1; --gray2:#e2e8f0; --gray1:#f1f5f9; --gray0:#f8fafc;
+  --white:#fff;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+  --shadow:0 4px 14px rgba(15,23,42,.08);
+  --shadow-md:0 8px 24px rgba(15,23,42,.12);
+  --r:10px; --r-sm:7px; --r-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--gray1);color:var(--gray9);font-size:14px;}
+
+/* ── Sticky Header ── */
+.app-header{
+  background:linear-gradient(135deg,var(--t9),var(--t5));
+  color:#fff; padding:0 20px; height:56px;
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow:0 2px 12px rgba(13,100,100,.25);
+  position:sticky; top:0; z-index:200;
+}
+.brand{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.brand-tag{background:rgba(255,255,255,.2);font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.btn-logout{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:#fff;padding:6px 14px;border-radius:8px;font-family:var(--font);
+  font-size:13px;font-weight:700;cursor:pointer;transition:.15s;
+}
+.btn-logout:hover{background:rgba(255,255,255,.25);}
+
+/* ── Layout ── */
+main{max-width:1280px;margin:0 auto;padding:18px 16px 48px;}
+
+/* ── Cards ── */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;}
+.card-sm{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;}
+
+/* ── KPI Strip ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:700px){.kpi-strip{grid-template-columns:repeat(2,1fr);}}
+.kpi-box{
+  background:var(--white);border-radius:var(--r);padding:16px 12px;
+  box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden;
+}
+.kpi-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-box.k-total::before  {background:var(--t5);}
+.kpi-box.k-low::before    {background:var(--danger);}
+.kpi-box.k-value::before  {background:var(--blue);}
+.kpi-box.k-req::before    {background:var(--warn);}
+.kpi-val{font-size:1.6rem;font-weight:800;line-height:1;color:var(--gray9);}
+.kpi-box.k-low  .kpi-val{color:var(--danger);}
+.kpi-box.k-value .kpi-val{color:var(--blue);}
+.kpi-box.k-req  .kpi-val{color:var(--warn);}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray5);margin-top:4px;}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--gray2);padding-bottom:0;margin-bottom:18px;}
+.tab-btn{
+  padding:8px 16px;border-radius:var(--r-sm) var(--r-sm) 0 0;
+  border:none;border-bottom:3px solid transparent;
+  background:transparent;font-family:var(--font);font-size:13px;font-weight:700;
+  color:var(--gray5);cursor:pointer;transition:.18s;
+  display:flex;align-items:center;gap:6px;margin-bottom:-2px;
+}
+.tab-btn:hover{color:var(--t5);background:var(--t0);}
+.tab-btn.active{color:var(--t7);border-bottom-color:var(--t5);background:var(--t0);}
+
+/* ── Form fields ── */
+.field-group{display:grid;gap:12px;}
+.field-2{grid-template-columns:1fr 1fr;}
+.field-3{grid-template-columns:1fr 1fr 1fr;}
+@media(max-width:600px){.field-2,.field-3{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray5);}
+.field input,.field select,.field textarea{
+  padding:9px 12px;border:1.5px solid var(--gray3);border-radius:var(--r-sm);
+  font-family:var(--font);font-size:13px;color:var(--gray9);
+  background:var(--white);transition:.18s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--t5);box-shadow:0 0 0 3px rgba(13,148,136,.12);
+}
+.field-row{display:flex;gap:8px;align-items:flex-end;}
+.field-row .field{flex:1;}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 16px;border:none;border-radius:var(--r-sm);
+  font-family:var(--font);font-size:13px;font-weight:700;
+  cursor:pointer;transition:.18s;white-space:nowrap;
+}
+.btn-primary{background:linear-gradient(135deg,var(--t9),var(--t5));color:#fff;box-shadow:0 3px 10px rgba(13,100,100,.25);}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(13,100,100,.4);transform:translateY(-1px);}
+.btn-ok    {background:var(--ok);    color:#fff;}
+.btn-ok:hover   {background:#15803d;}
+.btn-warn  {background:var(--warn);  color:#fff;}
+.btn-warn:hover {background:#b45309;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#b91c1c;}
+.btn-blue  {background:var(--blue);  color:#fff;}
+.btn-ghost {background:var(--gray1); border:1.5px solid var(--gray3);color:var(--gray7);}
+.btn-ghost:hover{border-color:var(--t4);background:var(--t0);color:var(--t7);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important;}
+
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
+thead tr{background:linear-gradient(90deg,var(--t7),var(--t5));}
+th{padding:10px 12px;color:#fff;font-size:11px;font-weight:700;
+   text-transform:uppercase;letter-spacing:.4px;text-align:left;white-space:nowrap;}
+th:first-child{border-radius:8px 0 0 0;}th:last-child{border-radius:0 8px 0 0;}
+tbody tr{border-bottom:1px solid var(--gray1);transition:.12s;}
+tbody tr:hover{background:var(--t0);}
+td{padding:9px 12px;vertical-align:middle;color:var(--gray7);}
+td.bold{font-weight:700;color:var(--gray9);}
+tr.row-crit td:first-child{border-left:3px solid var(--danger);}
+tr.row-warn td:first-child{border-left:3px solid var(--warn);}
+tr.row-ok   td:first-child{border-left:3px solid var(--ok);}
+
+/* ── Stock bar ── */
+.sbar-wrap{height:7px;background:var(--gray2);border-radius:99px;overflow:hidden;min-width:70px;margin-top:4px;}
+.sbar{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+.sbar-ok  {background:linear-gradient(90deg,var(--t7),var(--t4));}
+.sbar-warn{background:linear-gradient(90deg,var(--warn),#fcd34d);}
+.sbar-crit{background:var(--danger);}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;}
+.b-ok    {background:var(--ok-l);  color:var(--ok);}
+.b-warn  {background:var(--warn-l);color:var(--warn);}
+.b-crit  {background:var(--danger-l);color:var(--danger);}
+.b-teal  {background:var(--t1);    color:var(--t7);}
+.b-gray  {background:var(--gray1); color:var(--gray5);}
+.b-blue  {background:var(--blue-l);color:var(--blue);}
+
+/* ── Alert rows ── */
+.alert-row{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--r-sm);background:var(--danger-l);
+  border:1px solid #fca5a5;margin-bottom:6px;
+  animation:fadeRow .3s ease both;
+}
+.alert-row .a-name{flex:1;font-size:13px;font-weight:700;color:#7f1d1d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.alert-row .a-sub {font-size:11px;color:var(--danger);}
+.alert-row .a-btn {flex-shrink:0;}
+@keyframes fadeRow{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Receive More inline panel ── */
+.receive-panel{
+  display:none;background:var(--t0);border:1.5px solid var(--t1);
+  border-radius:var(--r);padding:14px;margin-top:10px;
+  animation:fadeRow .25s ease;
+}
+.receive-panel.open{display:block;}
+
+/* ── Info box ── */
+.info-box{
+  background:var(--gray0);border:1.5px solid var(--gray2);
+  border-radius:var(--r-sm);padding:12px;font-size:13px;
+}
+
+/* ── Toast ── */
+#toast{position:fixed;right:16px;bottom:16px;z-index:9000;display:flex;flex-direction:column;gap:6px;}
+.toast-msg{
+  padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;
+  color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2);
+  animation:fadeRow .3s ease;
+}
+.toast-ok  {background:var(--ok);}
+.toast-err {background:var(--danger);}
+.toast-info{background:var(--t5);}
+
+/* ── Section header ── */
+.sec-hdr{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--gray5);margin-bottom:10px;}
+
+/* ── Loader ── */
+.loader{text-align:center;padding:24px;}
+.spinner{width:24px;height:24px;border:3px solid var(--t1);border-top-color:var(--t5);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Pending requests ── */
+.req-card{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--white);border:1px solid var(--gray2);border-radius:var(--r-sm);
+  margin-bottom:8px;transition:.15s;
+}
+.req-card:hover{border-color:var(--t4);}
+.req-info{flex:1;min-width:0;}
+.req-name{font-size:13px;font-weight:700;color:var(--gray9);}
+.req-meta{font-size:11px;color:var(--gray5);margin-top:2px;}
+
+/* responsive */
+@media(max-width:640px){th,td{font-size:12px;padding:7px 8px;}.hide-mob{display:none;}}
 </style>
 </head>
 <body>
 
-<header class="p-4 bg-white border-b">
-  <div class="max-w-6xl mx-auto flex items-center justify-between">
-    <div>
-      <div class="text-xl font-semibold text-teal-800">Admin Inventory — v2.0</div>
-      <div class="small-muted">Simple, readable & responsive inventory manager</div>
-    </div>
-    <div class="flex items-center gap-2">
-      <button id="btnLogout" class="px-3 py-1 rounded bg-teal-600 text-white">Logout</button>
-    </div>
+<!-- ══════════ HEADER ══════════ -->
+<header class="app-header">
+  <div class="brand">
+    <i class="fa-solid fa-boxes-stacked"></i>
+    Admin — Inventory
+    <span class="brand-tag">Management</span>
+  </div>
+  <div class="header-right">
+    <span id="adminName" style="font-size:13px;opacity:.85;"></span>
+    <button class="btn-logout" id="btnLogout">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
   </div>
 </header>
 
-<main class="max-w-6xl mx-auto p-4">
-  <div class="card p-4">
-    <!-- Tabs -->
-    <div class="flex gap-2 flex-wrap">
-      <div id="tabAdd" class="tab tab-active">Add Material</div>
-      <div id="tabManage" class="tab">Manage Inventory</div>
-      <div id="tabCategories" class="tab">Categories</div>
-      <div id="tabSuppliers" class="tab">Suppliers</div>
+<!-- ══════════ TOAST ══════════ -->
+<div id="toast"></div>
+
+<main>
+
+  <!-- ══════════ KPI STRIP ══════════ -->
+  <div class="kpi-strip" id="kpiStrip" style="display:none;">
+    <div class="kpi-box k-total">
+      <div class="kpi-val" id="kTotal">—</div>
+      <div class="kpi-lbl">Total Items</div>
     </div>
-
-    <div id="content" class="mt-4">
-      <!-- ADD PANEL -->
-      <section id="panelAdd">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Left: form inputs -->
-          <div class="md:col-span-2 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="font-semibold small-muted">Department</label>
-                <select id="inpDept" class="w-full border rounded px-3 py-2 bg-white">
-                  <option value="">Select Department</option>
-                  <option value="HK">HK</option>
-                  <option value="Pantry">Pantry</option>
-                  <option value="ME">ME</option>
-                  <option value="Security">Security</option>
-                </select>
-              </div>
-              <div>
-                <label class="font-semibold small-muted">Category</label>
-                <div class="flex gap-2">
-                  <select id="inpCategory" class="flex-1 border rounded px-3 py-2 bg-white">
-                    <option value="">Select category</option>
-                  </select>
-                  <button id="btnAddCategory" class="px-3 bg-gray-100 rounded">+Add</button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label class="font-semibold small-muted">Material Name</label>
-              <input id="inpMaterial" class="w-full border rounded px-3 py-2" placeholder="e.g. Taski R1">
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="font-semibold small-muted">Container Size</label>
-                <input id="inpContainerSize" type="number" step="0.01" min="0" class="w-full border rounded px-3 py-2" placeholder="e.g. 5">
-              </div>
-              <div>
-                <label class="font-semibold small-muted">Container Unit</label>
-                <select id="inpContainerUnit" class="w-full border rounded px-3 py-2">
-                  <option value="Litre">Litre</option>
-                  <option value="ml">ml</option>
-                  <option value="Kg">Kg</option>
-                  <option value="g">g</option>
-                  <option value="Nos">Nos</option>
-                </select>
-              </div>
-              <div>
-                <label class="font-semibold small-muted">No. of Containers</label>
-                <input id="inpContainerCount" type="number" step="0.01" min="0" class="w-full border rounded px-3 py-2" value="1">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="font-semibold small-muted">MRP (per container)</label>
-                <input id="inpMrp" type="number" step="0.01" class="w-full border rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="font-semibold small-muted">Supplier</label>
-                <div class="flex gap-2">
-                  <select id="inpSupplier" class="flex-1 border rounded px-3 py-2 bg-white"></select>
-                  <button id="btnAddSupplier" class="px-3 bg-gray-100 rounded">+Add</button>
-                </div>
-              </div>
-              <div>
-                <label class="font-semibold small-muted">Received Date</label>
-                <input id="inpDate" type="date" class="w-full border rounded px-3 py-2">
-              </div>
-            </div>
-
-            <div>
-              <label class="font-semibold small-muted">Remarks</label>
-              <textarea id="inpRemarks" rows="2" class="w-full border rounded px-3 py-2"></textarea>
-            </div>
-
-            <div class="flex gap-2 items-center">
-              <button id="btnSave" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">Save / Receive</button>
-              <button id="btnClear" class="bg-gray-100 px-4 py-2 rounded">Clear</button>
-              <div id="lastAction" class="small-muted ml-4"></div>
-            </div>
-          </div>
-
-          <!-- Right: info & totals -->
-          <div class="space-y-3">
-            <div class="card p-4">
-              <div class="text-sm font-semibold text-teal-700">Totals (auto)</div>
-              <div class="mt-2">
-                <div class="small-muted">Total in base units</div>
-                <div id="displayTotalBase" class="mt-1 font-medium">—</div>
-              </div>
-              <div class="mt-3">
-                <div class="small-muted">Total MRP</div>
-                <div id="displayTotalMrp" class="mt-1 font-medium">—</div>
-              </div>
-            </div>
-
-            <div class="card p-4">
-              <div class="text-sm font-semibold text-teal-700">How it works</div>
-              <div class="small-muted mt-2">
-                If an inventory item exists (same name + dept + category), this action will <strong>add</strong> the received quantity to that item.
-                Liquids are stored in ml (L -> 1000 ml). We show both base and container counts.
-              </div>
-            </div>
-
-            <div class="card p-4">
-              <div class="text-sm font-semibold text-teal-700">Quick</div>
-              <div class="flex gap-2 mt-2">
-                <button id="btnRefresh" class="px-3 py-1 bg-gray-100 rounded">Refresh</button>
-                <button id="btnCalc" class="px-3 py-1 bg-gray-100 rounded">Recalc</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- MANAGE PANEL -->
-      <section id="panelManage" class="hidden mt-4">
-        <div class="flex flex-col md:flex-row gap-3 items-start md:items-center mb-3">
-          <input id="searchBox" placeholder="Search material, category or supplier..." class="flex-1 border rounded px-3 py-2">
-          <select id="filterDept" class="border rounded px-3 py-2 w-44">
-            <option value="">All Departments</option>
-            <option value="HK">HK</option>
-            <option value="Pantry">Pantry</option>
-            <option value="ME">ME</option>
-            <option value="Security">Security</option>
-          </select>
-          <button id="btnReload" class="bg-teal-600 text-white px-3 py-2 rounded">Reload</button>
-        </div>
-
-        <div class="table-wrap card p-3">
-          <table class="min-w-full">
-            <thead class="table-head">
-              <tr>
-                <th class="p-2 text-left">SL</th>
-                <th class="p-2 text-left">Material</th>
-                <th class="p-2">Category</th>
-                <th class="p-2">Dept</th>
-                <th class="p-2">Available (readable)</th>
-                <th class="p-2">Available (containers)</th>
-                <th class="p-2">Container</th>
-                <th class="p-2">MRP</th>
-                <th class="p-2">Supplier</th>
-                <th class="p-2">Date</th>
-                <th class="p-2">Remarks</th>
-                <th class="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="tblBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- CATEGORIES PANEL -->
-      <section id="panelCategories" class="hidden mt-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="card p-4">
-            <div class="font-semibold">Add Category</div>
-
-            <label class="small-muted text-sm">Department</label>
-            <select id="catDept" class="w-full border rounded px-3 py-2 mt-1">
-              <option value="">Select Department</option>
-              <option value="HK">HK</option>
-              <option value="Pantry">Pantry</option>
-              <option value="ME">ME</option>
-              <option value="Security">Security</option>
-            </select>
-
-            <label class="small-muted text-sm mt-2 block">Category Name</label>
-            <input id="catName" class="w-full border rounded px-3 py-2 mt-1" placeholder="Category name">
-
-            <div class="flex gap-2 mt-3">
-              <button id="btnSaveCat" class="bg-gray-600 text-white px-3 py-2 rounded">Save</button>
-              <button id="btnClearCat" class="bg-gray-100 px-3 py-2 rounded">Clear</button>
-            </div>
-          </div>
-
-          <div class="card p-4">
-            <div class="font-semibold">Categories</div>
-            <div class="mt-3 overflow-auto max-h-72">
-              <table class="w-full">
-                <thead><tr class="text-left small-muted"><th>Dept</th><th>Name</th><th>Actions</th></tr></thead>
-                <tbody id="catBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- SUPPLIERS PANEL -->
-      <section id="panelSuppliers" class="hidden mt-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="card p-4">
-            <div class="font-semibold">Add / Edit Supplier</div>
-            <input id="sName" placeholder="Supplier name" class="w-full mt-2 border rounded px-3 py-2">
-            <input id="sPhone" placeholder="Phone" class="w-full mt-2 border rounded px-3 py-2">
-            <input id="sEmail" placeholder="Email" class="w-full mt-2 border rounded px-3 py-2">
-            <textarea id="sAddress" placeholder="Address" rows="3" class="w-full mt-2 border rounded px-3 py-2"></textarea>
-            <div class="flex gap-2 mt-3">
-              <button id="btnSaveSup" class="bg-teal-600 text-white px-3 py-2 rounded">Save Supplier</button>
-              <button id="btnClearSup" class="bg-gray-100 px-3 py-2 rounded">Clear</button>
-            </div>
-          </div>
-
-          <div class="card p-4">
-            <div class="font-semibold">Suppliers</div>
-            <div class="mt-3 overflow-auto max-h-72">
-              <table class="w-full">
-                <thead><tr class="text-left small-muted"><th>Name</th><th>Phone</th><th>Actions</th></tr></thead>
-                <tbody id="supBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div class="kpi-box k-low">
+      <div class="kpi-val" id="kLow">—</div>
+      <div class="kpi-lbl">Low Stock</div>
+    </div>
+    <div class="kpi-box k-value">
+      <div class="kpi-val" id="kValue">—</div>
+      <div class="kpi-lbl">Inventory Value</div>
+    </div>
+    <div class="kpi-box k-req">
+      <div class="kpi-val" id="kReqs">—</div>
+      <div class="kpi-lbl">Pending Requests</div>
     </div>
   </div>
+
+  <!-- ══════════ MAIN CARD ══════════ -->
+  <div class="card">
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="add">
+        <i class="fa-solid fa-plus"></i> Add / Receive
+      </button>
+      <button class="tab-btn" data-tab="manage">
+        <i class="fa-solid fa-table-list"></i> Manage Stock
+      </button>
+      <button class="tab-btn" data-tab="requests">
+        <i class="fa-solid fa-file-circle-plus"></i> Requests
+        <span class="badge b-warn" id="reqBadge" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn" data-tab="categories">
+        <i class="fa-solid fa-tags"></i> Categories
+      </button>
+      <button class="tab-btn" data-tab="suppliers">
+        <i class="fa-solid fa-truck"></i> Suppliers
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════
+         TAB: ADD / RECEIVE MATERIAL
+    ════════════════════════════════════ -->
+    <section id="panelAdd">
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;">
+
+        <!-- Left: form -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div class="field-group field-2">
+            <div class="field">
+              <label>Department <span style="color:var(--danger)">*</span></label>
+              <select id="inpDept">
+                <option value="">Select Department</option>
+                <option value="HK">Housekeeping (HK)</option>
+                <option value="Pantry">Pantry</option>
+                <option value="ME">Maintenance (ME)</option>
+                <option value="Security">Security</option>
+                <option value="EHS">EHS</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Category <span style="color:var(--danger)">*</span></label>
+              <div class="field-row">
+                <div class="field">
+                  <select id="inpCategory">
+                    <option value="">Select Category</option>
+                  </select>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btnAddCategory" title="Add new category">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Material Name <span style="color:var(--danger)">*</span></label>
+            <input id="inpMaterial" placeholder="e.g. Taski R1 Floor Cleaner"/>
+          </div>
+
+          <div class="field-group field-3">
+            <div class="field">
+              <label>Container Size <span style="color:var(--danger)">*</span></label>
+              <input id="inpContainerSize" type="number" step="0.01" min="0" placeholder="e.g. 5"/>
+            </div>
+            <div class="field">
+              <label>Container Unit <span style="color:var(--danger)">*</span></label>
+              <select id="inpContainerUnit">
+                <optgroup label="Liquid">
+                  <option value="Litre">Litre</option>
+                  <option value="ml">ml</option>
+                </optgroup>
+                <optgroup label="Weight">
+                  <option value="Kg">Kg</option>
+                  <option value="g">g</option>
+                </optgroup>
+                <optgroup label="Count">
+                  <option value="Nos">Nos</option>
+                  <option value="Pcs">Pcs</option>
+                  <option value="Pair">Pair</option>
+                  <option value="Box">Box</option>
+                  <option value="Pack">Pack</option>
+                  <option value="Roll">Roll</option>
+                  <option value="Bag">Bag</option>
+                  <option value="Pouch">Pouch</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Strip">Strip</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="field">
+              <label>No. of Containers <span style="color:var(--danger)">*</span></label>
+              <input id="inpContainerCount" type="number" step="0.01" min="0" value="1"/>
+            </div>
+          </div>
+
+          <div class="field-group field-3">
+            <div class="field">
+              <label>MRP per Container (₹)</label>
+              <input id="inpMrp" type="number" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="field">
+              <label>Low Stock Threshold</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input id="inpThreshold" type="number" step="0.01" min="0" placeholder="0" style="flex:1;"/>
+                <span id="thresholdUnit" style="font-size:12px;color:var(--gray5);white-space:nowrap;font-weight:600;"></span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Received Date</label>
+              <input id="inpDate" type="date"/>
+            </div>
+          </div>
+
+          <div class="field-group field-2">
+            <div class="field">
+              <label>Supplier</label>
+              <div class="field-row">
+                <div class="field">
+                  <select id="inpSupplier">
+                    <option value="">Select Supplier</option>
+                  </select>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btnAddSupplier" title="Add new supplier">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Remarks</label>
+              <input id="inpRemarks" placeholder="Optional notes"/>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btnSave">
+              <i class="fa-solid fa-floppy-disk"></i> Save / Receive
+            </button>
+            <button class="btn btn-ghost" id="btnClear">
+              <i class="fa-solid fa-eraser"></i> Clear
+            </button>
+            <span id="lastAction" style="font-size:12px;color:var(--gray5);margin-left:4px;"></span>
+          </div>
+        </div>
+
+        <!-- Right: preview card -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card-sm" id="previewCard">
+            <div class="sec-hdr">Preview</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div>
+                <div style="font-size:11px;color:var(--gray5);font-weight:700;">Total Quantity</div>
+                <div id="displayTotalBase" style="font-size:16px;font-weight:800;color:var(--t7);margin-top:2px;">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--gray5);font-weight:700;">Inventory Value</div>
+                <div id="displayTotalMrp" style="font-size:16px;font-weight:800;color:var(--blue);margin-top:2px;">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-sm">
+            <div class="sec-hdr">How it works</div>
+            <div style="font-size:12px;color:var(--gray5);line-height:1.6;">
+              If this material <strong>already exists</strong> (same name + dept + category),
+              the received quantity is <strong>added</strong> to current stock.
+              Otherwise a new item is created.<br><br>
+              Liquids → stored in <strong>ml</strong><br>
+              Weight  → stored in <strong>g</strong><br>
+              Count   → stored as-is
+            </div>
+          </div>
+
+          <button class="btn btn-ghost" id="btnRefresh" style="width:100%;">
+            <i class="fa-solid fa-rotate-right"></i> Refresh Data
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB: MANAGE STOCK
+    ════════════════════════════════════ -->
+    <section id="panelManage" style="display:none;">
+
+      <!-- Filters -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input id="searchBox" placeholder="🔍  Search material, category…"
+          style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid var(--gray3);
+                 border-radius:var(--r-sm);font-family:var(--font);font-size:13px;"/>
+        <select id="filterDept"
+          style="padding:9px 12px;border:1.5px solid var(--gray3);border-radius:var(--r-sm);
+                 font-family:var(--font);font-size:13px;font-weight:600;background:var(--white);">
+          <option value="">All Departments</option>
+          <option value="HK">HK</option>
+          <option value="Pantry">Pantry</option>
+          <option value="ME">ME</option>
+          <option value="Security">Security</option>
+          <option value="EHS">EHS</option>
+        </select>
+        <select id="filterStock"
+          style="padding:9px 12px;border:1.5px solid var(--gray3);border-radius:var(--r-sm);
+                 font-family:var(--font);font-size:13px;font-weight:600;background:var(--white);">
+          <option value="all">All Stock Levels</option>
+          <option value="low">Low Stock Only</option>
+          <option value="ok">Good Stock Only</option>
+        </select>
+        <button class="btn btn-primary btn-sm" id="btnReload">
+          <i class="fa-solid fa-rotate-right"></i> Reload
+        </button>
+      </div>
+
+      <!-- Low stock alert section -->
+      <div id="lowStockSection" style="display:none;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="sec-hdr" style="color:var(--danger);margin-bottom:0;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Reorder Alerts
+            <span class="badge b-crit" id="lowCount" style="margin-left:4px;">0</span>
+          </div>
+        </div>
+        <div id="lowStockList"></div>
+      </div>
+
+      <!-- Inline Receive More panel -->
+      <div class="receive-panel" id="receivePanel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:14px;font-weight:800;color:var(--t7);">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+            Receive More Stock — <span id="receiveMaterialName" style="color:var(--gray9);"></span>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="btnCloseReceive">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:flex-end;">
+          <div class="field">
+            <label>Containers Received</label>
+            <input id="receiveCount" type="number" step="0.01" min="0.01" placeholder="e.g. 2" value="1"/>
+          </div>
+          <div class="field">
+            <label>Container Size (info)</label>
+            <input id="receiveContainerInfo" readonly style="background:var(--gray1);color:var(--gray5);"/>
+          </div>
+          <div class="field">
+            <label>Received Date</label>
+            <input id="receiveDate" type="date"/>
+          </div>
+          <button class="btn btn-ok" id="btnConfirmReceive">
+            <i class="fa-solid fa-check"></i> Confirm
+          </button>
+        </div>
+        <div id="receivePreview" style="margin-top:10px;font-size:12px;color:var(--gray5);font-weight:600;"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Material</th>
+              <th class="hide-mob">Category</th>
+              <th>Dept</th>
+              <th>Available</th>
+              <th>Containers</th>
+              <th>Container</th>
+              <th>Stock Level</th>
+              <th class="hide-mob">MRP</th>
+              <th class="hide-mob">Value</th>
+              <th class="hide-mob">Last Received</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tblBody">
+            <tr><td colspan="12"><div class="loader"><div class="spinner"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB: PENDING REQUESTS
+    ════════════════════════════════════ -->
+    <section id="panelRequests" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <div class="sec-hdr" style="margin-bottom:0;">Material Requests from Supervisors</div>
+        <select id="reqStatusFilter"
+          style="padding:8px 12px;border:1.5px solid var(--gray3);border-radius:var(--r-sm);
+                 font-family:var(--font);font-size:13px;font-weight:600;background:var(--white);">
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="">All</option>
+        </select>
+      </div>
+      <div id="requestsList">
+        <div class="loader"><div class="spinner"></div></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB: CATEGORIES
+    ════════════════════════════════════ -->
+    <section id="panelCategories" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div>
+          <div class="sec-hdr" id="catFormTitle">Add Category</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field">
+              <label>Department <span style="color:var(--danger)">*</span></label>
+              <select id="catDept">
+                <option value="">Select Department</option>
+                <option value="HK">HK</option>
+                <option value="Pantry">Pantry</option>
+                <option value="ME">ME</option>
+                <option value="Security">Security</option>
+                <option value="EHS">EHS</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Category Name <span style="color:var(--danger)">*</span></label>
+              <input id="catName" placeholder="e.g. Cleaning Chemicals"/>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" id="btnSaveCat">
+                <i class="fa-solid fa-floppy-disk"></i> Save
+              </button>
+              <button class="btn btn-ghost" id="btnClearCat">
+                <i class="fa-solid fa-eraser"></i> Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-hdr">All Categories</div>
+          <div class="tbl-wrap" style="max-height:400px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>Dept</th><th>Category</th><th>Actions</th></tr></thead>
+              <tbody id="catBody">
+                <tr><td colspan="3"><div class="loader"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         TAB: SUPPLIERS
+    ════════════════════════════════════ -->
+    <section id="panelSuppliers" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div>
+          <div class="sec-hdr" id="supFormTitle">Add Supplier</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field">
+              <label>Supplier Name <span style="color:var(--danger)">*</span></label>
+              <input id="sName" placeholder="Company / supplier name"/>
+            </div>
+            <div class="field-group field-2">
+              <div class="field">
+                <label>Contact Person</label>
+                <input id="sContact" placeholder="Contact name"/>
+              </div>
+              <div class="field">
+                <label>Phone</label>
+                <input id="sPhone" placeholder="+91 XXXXX XXXXX"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input id="sEmail" type="email" placeholder="email@supplier.com"/>
+            </div>
+            <div class="field">
+              <label>Address</label>
+              <textarea id="sAddress" rows="2" placeholder="Full address"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" id="btnSaveSup">
+                <i class="fa-solid fa-floppy-disk"></i> Save Supplier
+              </button>
+              <button class="btn btn-ghost" id="btnClearSup">
+                <i class="fa-solid fa-eraser"></i> Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-hdr">All Suppliers</div>
+          <div class="tbl-wrap" style="max-height:400px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Actions</th></tr></thead>
+              <tbody id="supBody">
+                <tr><td colspan="4"><div class="loader"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end main card -->
 </main>
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
-
-<!-- Firebase compat -->
+<!-- ══════════ FIREBASE ══════════ -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
 <script>
-/* ========== Firebase config (inline) ========== */
+/* ══════════════════════════════════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey: "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
-  authDomain: "facilitymanagement-47470.firebaseapp.com",
-  projectId: "facilitymanagement-47470",
-  storageBucket: "facilitymanagement-47470.firebasestorage.app",
+  apiKey:            "AIzaSyCS98TwN_CqGLuS1a600P76La7I7t6kJqU",
+  authDomain:        "facilitymanagement-47470.firebaseapp.com",
+  projectId:         "facilitymanagement-47470",
+  storageBucket:     "facilitymanagement-47470.firebasestorage.app",
   messagingSenderId: "638809761503",
-  appId: "1:638809761503:web:1a15443eeeee2414aaab6a"
+  appId:             "1:638809761503:web:1a15443eeeee2414aaab6a"
 };
-if (!window.firebaseAppsInitialized) { firebase.initializeApp(firebaseConfig); window.firebaseAppsInitialized = true; }
-const db = firebase.firestore();
+if (!window._fbInit) { firebase.initializeApp(firebaseConfig); window._fbInit = true; }
+const db   = firebase.firestore();
+const auth = firebase.auth();
 
-/* ========== Utilities ========== */
-function toast(msg, type='success') {
-  const t = document.getElementById('toast');
-  const bg = type==='success' ? 'bg-green-600' : 'bg-red-600';
-  t.innerHTML = `<div class="${bg} text-white px-4 py-2 rounded shadow">${msg}</div>`;
-  setTimeout(()=>{ if (t.firstChild) t.removeChild(t.firstChild); }, 3500);
-}
-function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* ══════════════════════════════════════════════════════════════
+   UNIT SYSTEM
+   Three families — same as supervisor-inventory-issue.html
+══════════════════════════════════════════════════════════════ */
+const UNIT_FAMILY = {
+  'Litre':'liquid','ml':'liquid','L':'liquid',
+  'Kg':'weight','g':'weight','kg':'weight',
+};
+function unitFamily(u) { return UNIT_FAMILY[u] || 'count'; }
 
-/* ========== conversions ==========
-   store base units: liquids->ml, weight->g, nos->nos
-*/
 function toBaseQty(amount, unit) {
   if (!unit) return amount;
-  const u = unit.toLowerCase();
-  if (u === 'litre' || u === 'l') return amount * 1000;
-  if (u === 'ml') return amount;
-  if (u === 'kg') return amount * 1000;
-  if (u === 'g') return amount;
-  if (u === 'nos') return amount;
+  const f = unitFamily(unit);
+  if (f === 'liquid') return unit.toLowerCase() === 'ml' ? amount : amount * 1000;
+  if (f === 'weight') return (unit === 'g' || unit === 'kg' && false) ? amount : unit === 'Kg' ? amount * 1000 : amount;
   return amount;
 }
-function formatBaseQty(val, unit) {
-  if (val===undefined || val===null) return '-';
-  if (!unit) return `${val}`;
-  const u = unit.toLowerCase();
-  if (u === 'litre' || u === 'l') return `${(val/1000).toFixed(3)} L (${Math.round(val)} ml)`;
-  if (u === 'ml') return `${Math.round(val)} ml`;
-  if (u === 'kg' || u === 'g') {
-    if (val >= 1000) return `${(val/1000).toFixed(3)} Kg (${Math.round(val)} g)`;
-    return `${Math.round(val)} g`;
-  }
-  if (u === 'nos') return `${val} Nos`;
-  return `${val} ${unit}`;
+
+function baseToHuman(val, containerUnit) {
+  if (val === undefined || val === null) return '—';
+  const f = unitFamily(containerUnit);
+  if (f === 'liquid') return val >= 1000
+    ? `${(val/1000).toFixed(3).replace(/\.?0+$/,'')} L`
+    : `${Math.round(val)} ml`;
+  if (f === 'weight') return val >= 1000
+    ? `${(val/1000).toFixed(3).replace(/\.?0+$/,'')} Kg`
+    : `${Math.round(val)} g`;
+  return `${Math.round(val*1000)/1000} ${containerUnit||''}`.trim();
 }
 
-/* ========== DOM refs ========== */
-const tabAdd = document.getElementById('tabAdd'), tabManage = document.getElementById('tabManage'),
-      tabCategories = document.getElementById('tabCategories'), tabSuppliers = document.getElementById('tabSuppliers');
+/* ══════════════════════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════════════════════ */
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
-const panelAdd = document.getElementById('panelAdd'), panelManage = document.getElementById('panelManage'),
-      panelCategories = document.getElementById('panelCategories'), panelSuppliers = document.getElementById('panelSuppliers');
+function toast(msg, type = 'ok') {
+  const el   = document.getElementById('toast');
+  const div  = document.createElement('div');
+  div.className = `toast-msg toast-${type}`;
+  div.textContent = msg;
+  el.appendChild(div);
+  setTimeout(() => div.remove(), 3500);
+}
 
-const inpDept = document.getElementById('inpDept'), inpCategory = document.getElementById('inpCategory'),
-      inpMaterial = document.getElementById('inpMaterial'), inpContainerSize = document.getElementById('inpContainerSize'),
-      inpContainerUnit = document.getElementById('inpContainerUnit'), inpContainerCount = document.getElementById('inpContainerCount'),
-      inpMrp = document.getElementById('inpMrp'), inpSupplier = document.getElementById('inpSupplier'),
-      inpRemarks = document.getElementById('inpRemarks'), inpDate = document.getElementById('inpDate'),
-      displayTotalBase = document.getElementById('displayTotalBase'), displayTotalMrp = document.getElementById('displayTotalMrp'),
-      btnSave = document.getElementById('btnSave'), btnClear = document.getElementById('btnClear'),
-      btnAddCategory = document.getElementById('btnAddCategory'), btnAddSupplier = document.getElementById('btnAddSupplier'),
-      lastAction = document.getElementById('lastAction'), btnRefresh = document.getElementById('btnRefresh'),
-      btnCalc = document.getElementById('btnCalc');
+function localDate(d) {
+  const dt = d || new Date();
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
 
-const searchBox = document.getElementById('searchBox'), filterDept = document.getElementById('filterDept'), btnReload = document.getElementById('btnReload'),
-      tblBody = document.getElementById('tblBody');
+function fmtCurrency(n) {
+  return '₹' + (n||0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
 
-const catName = document.getElementById('catName'), catDept = document.getElementById('catDept'), btnSaveCat = document.getElementById('btnSaveCat'),
-      btnClearCat = document.getElementById('btnClearCat'), catBody = document.getElementById('catBody');
-
-const sName = document.getElementById('sName'), sPhone = document.getElementById('sPhone'), sEmail = document.getElementById('sEmail'),
-      sAddress = document.getElementById('sAddress'), btnSaveSup = document.getElementById('btnSaveSup'), btnClearSup = document.getElementById('btnClearSup'),
-      supBody = document.getElementById('supBody');
-
-/* editing states */
-let editingSupplierId = null;
+/* state */
 let editingCategoryId = null;
-let currentEditInventoryId = null;
+let editingSupplierId = null;
+let currentEditId     = null;
+let receivingItemId   = null;
+let inventoryData     = [];   /* cached for receive panel / low stock */
 
-/* ========== Init defaults ========== */
-inpDate.value = new Date().toISOString().split('T')[0];
+/* ══════════════════════════════════════════════════════════════
+   AUTH GUARD
+══════════════════════════════════════════════════════════════ */
+auth.onAuthStateChanged(user => {
+  if (!user) { location.href = 'index.html'; return; }
+  const name = localStorage.getItem('supervisorName') || user.email.split('@')[0];
+  document.getElementById('adminName').textContent = name;
+});
 
-/* ========== Tab handler ========== */
-function show(tab) {
-  panelAdd.classList.add('hidden'); panelManage.classList.add('hidden'); panelCategories.classList.add('hidden'); panelSuppliers.classList.add('hidden');
-  tabAdd.classList.remove('tab-active'); tabManage.classList.remove('tab-active'); tabCategories.classList.remove('tab-active'); tabSuppliers.classList.remove('tab-active');
-  if (tab==='add'){ panelAdd.classList.remove('hidden'); tabAdd.classList.add('tab-active'); }
-  if (tab==='manage'){ panelManage.classList.remove('hidden'); tabManage.classList.add('tab-active'); loadInventory(); }
-  if (tab==='categories'){ panelCategories.classList.remove('hidden'); tabCategories.classList.add('tab-active'); loadCategories(); }
-  if (tab==='suppliers'){ panelSuppliers.classList.remove('hidden'); tabSuppliers.classList.add('tab-active'); loadSuppliers(); }
+/* ══════════════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════════════ */
+const panels = { add:'panelAdd', manage:'panelManage', requests:'panelRequests', categories:'panelCategories', suppliers:'panelSuppliers' };
+
+function showTab(tab) {
+  Object.values(panels).forEach(id => document.getElementById(id).style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(panels[tab]).style.display = '';
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+
+  /* show KPI strip on manage tab */
+  document.getElementById('kpiStrip').style.display = tab === 'manage' ? 'grid' : 'none';
+
+  if (tab === 'manage')    { loadInventory(); loadKPIs(); }
+  if (tab === 'requests')  loadRequests();
+  if (tab === 'categories') loadCategories();
+  if (tab === 'suppliers') loadSuppliers();
 }
-tabAdd.addEventListener('click', ()=> show('add'));
-tabManage.addEventListener('click', ()=> show('manage'));
-tabCategories.addEventListener('click', ()=> show('categories'));
-tabSuppliers.addEventListener('click', ()=> show('suppliers'));
 
-/* ========== Load categories & suppliers ==========
-   - loadCategories(selectedDept) will populate:
-     1) inpCategory with categories filtered by selectedDept (or all when null)
-     2) catBody with full category list (for management)
-*/
-async function loadCategories(selectedDept = null) {
-  inpCategory.innerHTML = '<option value="">Loading...</option>';
-  catBody.innerHTML = '<tr><td colspan="3" class="p-2">Loading...</td></tr>';
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORIES
+══════════════════════════════════════════════════════════════ */
+async function loadCategories(deptFilter = null) {
+  const catBody = document.getElementById('catBody');
+  catBody.innerHTML = '<tr><td colspan="3"><div class="loader"><div class="spinner"></div></div></td></tr>';
   try {
     const snap = await db.collection('categories').orderBy('categoryName').get();
-    // prepare full list for catBody
     catBody.innerHTML = '';
-    const options = [];
+    const opts = [];
     snap.forEach(doc => {
       const d = doc.data();
-      // build management table row
-      catBody.insertAdjacentHTML('beforeend', 
-        `<tr>
-          <td class="p-2">${escapeHtml(d.department || '-')}</td>
-          <td class="p-2">${escapeHtml(d.categoryName)}</td>
-          <td class="p-2">
-            <button class="px-2 py-1 bg-yellow-200 rounded" onclick="editCategory('${doc.id}')">Edit</button>
-            <button class="px-2 py-1 bg-red-400 text-white rounded" onclick="deleteCategory('${doc.id}')">Del</button>
+      catBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td><span class="badge b-teal">${esc(d.department||'—')}</span></td>
+          <td class="bold">${esc(d.categoryName)}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="editCategory('${doc.id}')">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory('${doc.id}')" style="margin-left:4px;">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </td>
         </tr>`);
-      // collect for dropdown (but filter later)
-      options.push({ id: doc.id, name: d.categoryName, department: d.department || '' });
+      opts.push({ id:doc.id, name:d.categoryName, dept:d.department||'' });
     });
-    if (snap.empty) catBody.innerHTML = '<tr><td colspan="3" class="p-2">No categories</td></tr>';
+    if (snap.empty) catBody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gray5);">No categories yet</td></tr>';
 
-    // populate inpCategory filtered by selectedDept
-    inpCategory.innerHTML = '<option value="">Select category</option>';
-    options.forEach(o => {
-      if (!selectedDept || selectedDept === '' || o.department === selectedDept) {
-        inpCategory.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(o.name)}" data-id="${o.id}" data-dept="${escapeHtml(o.department)}">${escapeHtml(o.name)}</option>`);
+    /* Populate category dropdown in Add form */
+    const inpCat = document.getElementById('inpCategory');
+    inpCat.innerHTML = '<option value="">Select Category</option>';
+    opts.forEach(o => {
+      if (!deptFilter || o.dept === deptFilter) {
+        inpCat.insertAdjacentHTML('beforeend', `<option value="${esc(o.name)}">${esc(o.name)}</option>`);
       }
     });
-
-  } catch (e){ console.error(e); inpCategory.innerHTML = '<option value="">Failed</option>'; catBody.innerHTML = '<tr><td colspan="3">Load failed</td></tr>'; }
+  } catch(e) { console.error(e); toast('Failed to load categories','err'); }
 }
 
-async function loadSuppliers() {
-  inpSupplier.innerHTML = '<option value="">Loading...</option>';
-  supBody.innerHTML = '<tr><td colspan="3" class="p-2">Loading...</td></tr>';
-  try {
-    const snap = await db.collection('suppliers').orderBy('supplierName').get();
-    inpSupplier.innerHTML = '<option value="">Select supplier</option>';
-    supBody.innerHTML = '';
-    snap.forEach(doc => {
-      const d = doc.data();
-      inpSupplier.insertAdjacentHTML('beforeend', `<option value="${doc.id}">${escapeHtml(d.supplierName)}</option>`);
-      supBody.insertAdjacentHTML('beforeend', `<tr><td class="p-2">${escapeHtml(d.supplierName)}</td><td class="p-2">${escapeHtml(d.phone||'')}</td><td class="p-2"><button class="px-2 py-1 bg-yellow-200 rounded" onclick="editSupplier('${doc.id}')">Edit</button> <button class="px-2 py-1 bg-red-400 text-white rounded" onclick="deleteSupplier('${doc.id}')">Del</button></td></tr>`);
-    });
-    if (snap.empty) supBody.innerHTML = '<tr><td colspan="3" class="p-2">No suppliers</td></tr>';
-  } catch (e){ console.error(e); inpSupplier.innerHTML = '<option value="">Failed</option>'; supBody.innerHTML = '<tr><td colspan="3">Load failed</td></tr>'; }
-}
-
-/* ========== Add / Receive material ==========
-   - If existing (materialName + dept + category) -> update receivedQty (base units)
-   - Else create new doc.
-*/
-async function saveMaterial() {
-  const department = inpDept.value;
-  const category = inpCategory.value;
-  const materialName = inpMaterial.value.trim();
-  const containerSize = parseFloat(inpContainerSize.value) || 0;
-  const containerUnit = inpContainerUnit.value;
-  const containerCount = parseFloat(inpContainerCount.value) || 0;
-  const mrp = parseFloat(inpMrp.value) || 0;
-  const supplierId = inpSupplier.value || '';
-  const remarks = inpRemarks.value.trim();
-  const receivedDate = inpDate.value || new Date().toISOString().split('T')[0];
-
-  if (!department || !category || !materialName || !containerSize || !containerCount) {
-    toast('Please fill required fields', 'error'); return;
-  }
-
-  const perContainerBase = toBaseQty(containerSize, containerUnit);
-  const addBase = Math.round(perContainerBase * containerCount * 10000)/10000; // base units to add
-  const totalMrp = (mrp * containerCount) || 0;
-
-  try {
-    const q = await db.collection('inventory')
-      .where('materialName','==',materialName)
-      .where('department','==',department)
-      .where('category','==',category)
-      .limit(1).get();
-
-    if (!q.empty) {
-      // update existing
-      const doc = q.docs[0];
-      const data = doc.data();
-      const newBase = Math.round(((parseFloat(data.receivedQty || 0) + addBase) + Number.EPSILON) * 10000) / 10000;
-      await db.collection('inventory').doc(doc.id).update({
-        receivedQty: newBase,
-        mrp: mrp || data.mrp || 0,
-        totalMrp: (parseFloat(data.totalMrp || 0) + totalMrp),
-        supplierId: supplierId || data.supplierId || '',
-        supplierName: supplierId ? (await getSupplierName(supplierId)) : (data.supplierName || ''),
-        remarks: remarks || data.remarks || '',
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      toast('Stock updated for existing item');
-      lastAction.innerText = `Updated ${materialName} (+${addBase} base units)`;
-    } else {
-      // create new
-      const supplierName = supplierId ? await getSupplierName(supplierId) : '';
-      await db.collection('inventory').add({
-        materialName, category, department,
-        containerSize, containerUnit,
-        containerCount,
-        receivedQty: addBase,
-        mrp, totalMrp,
-        supplierId, supplierName,
-        remarks, receivedDate,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      toast('New material added');
-      lastAction.innerText = `Added ${materialName} (${department}) — ${addBase} base units`;
-    }
-    clearAddForm();
-    loadInventory();
-  } catch (e) {
-    console.error(e); toast('Save failed', 'error');
-  }
-}
-async function getSupplierName(id) { if(!id) return ''; try { const d = await db.collection('suppliers').doc(id).get(); return d.exists ? d.data().supplierName : ''; } catch(e){return '';} }
-
-function clearAddForm(){
-  inpDept.value=''; inpCategory.value=''; inpMaterial.value=''; inpContainerSize.value=''; inpContainerUnit.value='Litre';
-  inpContainerCount.value=1; inpMrp.value=''; inpSupplier.value=''; inpRemarks.value=''; inpDate.value = new Date().toISOString().split('T')[0];
-  displayTotalBase.innerText='—'; displayTotalMrp.innerText='—';
-  btnSave.innerText = 'Save / Receive';
-  btnSave.onclick = saveMaterial;
-  currentEditInventoryId = null;
-}
-
-/* calculate totals locally */
-function recalcTotals() {
-  const sz = parseFloat(inpContainerSize.value) || 0;
-  const unit = inpContainerUnit.value;
-  const cnt = parseFloat(inpContainerCount.value) || 0;
-  const perBase = toBaseQty(sz, unit);
-  const totalBase = perBase * cnt;
-  displayTotalBase.innerText = formatBaseQty(totalBase, unit);
-  displayTotalMrp.innerText = ( (parseFloat(inpMrp.value)||0) * cnt ).toFixed(2);
-}
-
-/* ========== Inventory list (manage) ========== */
-async function loadInventory() {
-  tblBody.innerHTML = '<tr><td colspan="12" class="p-2">Loading...</td></tr>';
-  try {
-    const snap = await db.collection('inventory').orderBy('materialName').get();
-    const rows = [];
-    snap.forEach(doc => { const d = doc.data(); d._id = doc.id; rows.push(d); });
-
-    const q = (searchBox.value || '').toLowerCase();
-    const fDept = filterDept.value;
-
-    const filtered = rows.filter(r=>{
-      if (fDept && r.department !== fDept) return false;
-      if (!q) return true;
-      return (r.materialName||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.supplierName||'').toLowerCase().includes(q);
-    });
-
-    if (!filtered.length) {
-      tblBody.innerHTML = '<tr><td colspan="12" class="p-2">No items found</td></tr>'; return;
-    }
-    tblBody.innerHTML = '';
-    let i=1;
-    for (const r of filtered) {
-      const perContainerBase = toBaseQty(r.containerSize || 0, r.containerUnit || r.containerUnit);
-      const availableBase = parseFloat(r.receivedQty || 0);
-      const containersRemaining = perContainerBase ? Math.floor(availableBase / perContainerBase) : '—';
-      const availableReadable = formatBaseQty(availableBase, r.containerUnit || r.containerUnit);
-      const containerDesc = `${r.containerSize || '-'} ${r.containerUnit || ''}`;
-      const mrpDisplay = r.mrp ? `₹${r.mrp}` : '-';
-      tblBody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td class="p-2">${i++}</td>
-          <td class="p-2">${escapeHtml(r.materialName||'')}</td>
-          <td class="p-2 text-center">${escapeHtml(r.category||'')}</td>
-          <td class="p-2 text-center">${escapeHtml(r.department||'')}</td>
-          <td class="p-2">${availableReadable}</td>
-          <td class="p-2 text-center">${containersRemaining}</td>
-          <td class="p-2 text-center">${escapeHtml(containerDesc)}</td>
-          <td class="p-2 text-center">${mrpDisplay}</td>
-          <td class="p-2">${escapeHtml(r.supplierName||'')}</td>
-          <td class="p-2 text-center">${escapeHtml(r.receivedDate||'')}</td>
-          <td class="p-2">${escapeHtml(r.remarks||'')}</td>
-          <td class="p-2">
-            <div class="flex gap-2">
-              <button class="px-2 py-1 bg-yellow-200 rounded" onclick="openEdit('${r._id}')">Edit</button>
-              <button class="px-2 py-1 bg-blue-200 rounded" onclick="receiveMore('${r._id}')">Receive</button>
-              <button class="px-2 py-1 bg-red-500 text-white rounded" onclick="deleteItem('${r._id}')">Delete</button>
-            </div>
-          </td>
-        </tr>`);
-    }
-  } catch(e) { console.error(e); tblBody.innerHTML = '<tr><td colspan="12">Error loading</td></tr>'; }
-}
-
-/* ========== Edit item (prefill add form for edit) ========== */
-async function openEdit(id) {
-  try {
-    const doc = await db.collection('inventory').doc(id).get();
-    if (!doc.exists) { toast('Item not found','error'); return; }
-    const d = doc.data();
-    show('add');
-    inpDept.value = d.department || '';
-    // load categories filtered by department, then set category
-    await loadCategories(d.department || '');
-    inpCategory.value = d.category || '';
-    inpMaterial.value = d.materialName || '';
-    inpContainerSize.value = d.containerSize || '';
-    inpContainerUnit.value = d.containerUnit || 'Litre';
-    inpContainerCount.value = d.containerCount || 1;
-    inpMrp.value = d.mrp || '';
-    inpSupplier.value = d.supplierId || '';
-    inpRemarks.value = d.remarks || '';
-    inpDate.value = d.receivedDate || new Date().toISOString().split('T')[0];
-    recalcTotals();
-    btnSave.innerText = 'Update Item';
-    currentEditInventoryId = id;
-    btnSave.onclick = async function updateHandler() {
-      const updates = {
-        department: inpDept.value, category: inpCategory.value, materialName: inpMaterial.value.trim(),
-        containerSize: parseFloat(inpContainerSize.value) || 0, containerUnit: inpContainerUnit.value,
-        containerCount: parseFloat(inpContainerCount.value) || 1, mrp: parseFloat(inpMrp.value) || 0,
-        supplierId: inpSupplier.value || '', supplierName: inpSupplier.options[inpSupplier.selectedIndex] ? inpSupplier.options[inpSupplier.selectedIndex].text : '',
-        remarks: inpRemarks.value, receivedDate: inpDate.value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      try {
-        await db.collection('inventory').doc(id).update(updates);
-        toast('Item updated');
-        btnSave.innerText = 'Save / Receive';
-        btnSave.onclick = saveMaterial;
-        loadInventory();
-        clearAddForm();
-      } catch (e){ console.error(e); toast('Update failed','error'); }
-    };
-  } catch(e){ console.error(e); toast('Open edit failed','error'); }
-}
-
-/* ========== Receive more (prompt for containers) ========== */
-async function receiveMore(id) {
-  const v = prompt('Enter number of containers received (e.g., 2 or 0.5):', '1');
-  if (!v) return;
-  const cnt = parseFloat(v);
-  if (!cnt || cnt <= 0) { toast('Invalid count','error'); return; }
-  try {
-    await db.runTransaction(async tx => {
-      const ref = db.collection('inventory').doc(id);
-      const snap = await tx.get(ref);
-      if (!snap.exists) throw 'Not found';
-      const doc = snap.data();
-      const perBase = toBaseQty(doc.containerSize || 0, doc.containerUnit || 'Litre');
-      const addBase = perBase * cnt;
-      const newQty = Math.round(((parseFloat(doc.receivedQty || 0) + addBase) + Number.EPSILON) * 10000) / 10000;
-      tx.update(ref, { receivedQty: newQty, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    });
-    toast('Stock received and updated');
-    loadInventory();
-  } catch(e){ console.error(e); toast('Receive failed','error'); }
-}
-
-/* ========== Delete item ========== */
-async function deleteItem(id) {
-  if (!confirm('Delete this item?')) return;
-  try {
-    await db.collection('inventory').doc(id).delete();
-    toast('Deleted');
-    loadInventory();
-  } catch(e){ console.error(e); toast('Delete failed','error'); }
-}
-
-/* ========== Categories CRUD ========== */
 async function saveCategory() {
-  const name = catName.value.trim();
-  const dept = catDept.value;
-  if (!name || !dept) { toast('Select Department & enter Category', 'error'); return; }
-  if (editingCategoryId) {
-    try {
-      await db.collection('categories').doc(editingCategoryId).update({ categoryName: name, department: dept, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      toast('Category updated'); editingCategoryId = null; catName.value = ''; catDept.value = '';
-      loadCategories();
-    } catch(e){ console.error(e); toast('Update fail','error'); }
-  } else {
-    try {
-      // avoid dup (same name + dept)
-      const q = await db.collection('categories').where('categoryName','==',name).where('department','==',dept).limit(1).get();
-      if (!q.empty) { toast('Category exists for this department','error'); return; }
-      await db.collection('categories').add({ categoryName: name, department: dept, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      toast('Category added'); catName.value = ''; catDept.value = '';
-      loadCategories();
-    } catch(e){ console.error(e); toast('Save failed','error'); }
-  }
+  const name = document.getElementById('catName').value.trim();
+  const dept = document.getElementById('catDept').value;
+  if (!name || !dept) { toast('Select department and enter category name','err'); return; }
+  try {
+    if (editingCategoryId) {
+      await db.collection('categories').doc(editingCategoryId).update({
+        categoryName:name, department:dept,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast('Category updated');
+      editingCategoryId = null;
+      document.getElementById('catFormTitle').textContent = 'Add Category';
+    } else {
+      const dup = await db.collection('categories')
+        .where('categoryName','==',name).where('department','==',dept).limit(1).get();
+      if (!dup.empty) { toast('Category already exists for this department','err'); return; }
+      await db.collection('categories').add({
+        categoryName:name, department:dept,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast('Category added');
+    }
+    document.getElementById('catName').value = '';
+    document.getElementById('catDept').value = '';
+    loadCategories();
+  } catch(e) { console.error(e); toast('Save failed','err'); }
 }
+
 async function editCategory(id) {
   const doc = await db.collection('categories').doc(id).get();
   if (!doc.exists) return;
   const d = doc.data();
-  catName.value = d.categoryName || '';
-  catDept.value = d.department || '';
+  document.getElementById('catName').value = d.categoryName || '';
+  document.getElementById('catDept').value = d.department   || '';
   editingCategoryId = id;
-  show('categories');
-}
-async function deleteCategory(id) {
-  if (!confirm('Delete category?')) return;
-  try { await db.collection('categories').doc(id).delete(); toast('Deleted'); loadCategories(); } catch(e){console.error(e); toast('Delete fail','error'); }
+  document.getElementById('catFormTitle').textContent = 'Edit Category';
 }
 
-/* ========== Suppliers CRUD ========== */
+async function deleteCategory(id) {
+  if (!confirm('Delete this category?')) return;
+  try { await db.collection('categories').doc(id).delete(); toast('Deleted'); loadCategories(); }
+  catch(e) { toast('Delete failed','err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SUPPLIERS
+══════════════════════════════════════════════════════════════ */
+async function loadSuppliers() {
+  const supBody = document.getElementById('supBody');
+  supBody.innerHTML = '<tr><td colspan="4"><div class="loader"><div class="spinner"></div></div></td></tr>';
+  try {
+    const snap = await db.collection('suppliers').orderBy('supplierName').get();
+    const inpSup = document.getElementById('inpSupplier');
+    inpSup.innerHTML = '<option value="">Select Supplier</option>';
+    supBody.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      inpSup.insertAdjacentHTML('beforeend', `<option value="${doc.id}">${esc(d.supplierName)}</option>`);
+      supBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td class="bold">${esc(d.supplierName)}</td>
+          <td>${esc(d.contactPerson||d.contact||'—')}</td>
+          <td>${esc(d.phone||'—')}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="editSupplier('${doc.id}')">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSupplier('${doc.id}')" style="margin-left:4px;">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>`);
+    });
+    if (snap.empty) supBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gray5);">No suppliers yet</td></tr>';
+  } catch(e) { console.error(e); toast('Failed to load suppliers','err'); }
+}
+
 async function saveSupplier() {
-  const name = sName.value.trim();
-  if (!name) { toast('Supplier name required','error'); return; }
-  const data = { supplierName: name, phone: sPhone.value.trim(), email: sEmail.value.trim(), address: sAddress.value.trim(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const name = document.getElementById('sName').value.trim();
+  if (!name) { toast('Supplier name required','err'); return; }
+  const data = {
+    supplierName:  name,
+    contactPerson: document.getElementById('sContact').value.trim(),
+    phone:         document.getElementById('sPhone').value.trim(),
+    email:         document.getElementById('sEmail').value.trim(),
+    address:       document.getElementById('sAddress').value.trim(),
+    updatedAt:     firebase.firestore.FieldValue.serverTimestamp()
+  };
   try {
     if (editingSupplierId) {
       await db.collection('suppliers').doc(editingSupplierId).update(data);
       toast('Supplier updated'); editingSupplierId = null;
+      document.getElementById('supFormTitle').textContent = 'Add Supplier';
     } else {
-      await db.collection('suppliers').add({ ...data, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('suppliers').add({ ...data, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
       toast('Supplier added');
     }
-    sName.value=''; sPhone.value=''; sEmail.value=''; sAddress.value=''; loadSuppliers();
-  } catch(e){ console.error(e); toast('Save failed','error'); }
+    ['sName','sContact','sPhone','sEmail','sAddress'].forEach(id => document.getElementById(id).value = '');
+    loadSuppliers();
+  } catch(e) { console.error(e); toast('Save failed','err'); }
 }
+
 async function editSupplier(id) {
   const doc = await db.collection('suppliers').doc(id).get();
   if (!doc.exists) return;
-  const d = doc.data(); sName.value=d.supplierName||''; sPhone.value=d.phone||''; sEmail.value=d.email||''; sAddress.value=d.address||''; editingSupplierId = id; show('suppliers');
+  const d = doc.data();
+  document.getElementById('sName').value    = d.supplierName    || '';
+  document.getElementById('sContact').value = d.contactPerson   || d.contact || '';
+  document.getElementById('sPhone').value   = d.phone           || '';
+  document.getElementById('sEmail').value   = d.email           || '';
+  document.getElementById('sAddress').value = d.address         || '';
+  editingSupplierId = id;
+  document.getElementById('supFormTitle').textContent = 'Edit Supplier';
 }
+
 async function deleteSupplier(id) {
-  if (!confirm('Delete supplier?')) return;
-  try { await db.collection('suppliers').doc(id).delete(); toast('Deleted'); loadSuppliers(); } catch(e){console.error(e); toast('Delete fail','error'); }
+  if (!confirm('Delete this supplier?')) return;
+  try { await db.collection('suppliers').doc(id).delete(); toast('Deleted'); loadSuppliers(); }
+  catch(e) { toast('Delete failed','err'); }
 }
 
-/* ========== Event wiring ========== */
-btnSave.addEventListener('click', saveMaterial);
-btnClear.addEventListener('click', clearAddForm);
-inpContainerSize.addEventListener('input', recalcTotals);
-inpContainerUnit.addEventListener('change', recalcTotals);
-inpContainerCount.addEventListener('input', recalcTotals);
-inpMrp.addEventListener('input', recalcTotals);
-btnAddCategory.addEventListener('click', ()=>{ show('categories'); catName.focus(); });
-btnAddSupplier.addEventListener('click', ()=>{ show('suppliers'); sName.focus(); });
-btnRefresh.addEventListener('click', ()=>{ loadCategories(inpDept.value); loadSuppliers(); loadInventory(); toast('Refreshed'); });
-btnCalc.addEventListener('click', recalcTotals);
+/* ══════════════════════════════════════════════════════════════
+   ADD / SAVE MATERIAL
+══════════════════════════════════════════════════════════════ */
+async function getSupplierName(id) {
+  if (!id) return '';
+  try { const d = await db.collection('suppliers').doc(id).get(); return d.exists ? d.data().supplierName : ''; }
+  catch(e) { return ''; }
+}
 
-searchBox.addEventListener('input', ()=> loadInventory());
-filterDept.addEventListener('change', ()=> loadInventory());
-btnReload.addEventListener('click', ()=> loadInventory());
+function recalcPreview() {
+  const sz   = parseFloat(document.getElementById('inpContainerSize').value)  || 0;
+  const unit = document.getElementById('inpContainerUnit').value;
+  const cnt  = parseFloat(document.getElementById('inpContainerCount').value) || 0;
+  const mrp  = parseFloat(document.getElementById('inpMrp').value)            || 0;
+  const base = toBaseQty(sz, unit) * cnt;
 
-btnSaveCat.addEventListener('click', saveCategory);
-btnClearCat.addEventListener('click', ()=>{ catName.value=''; catDept.value=''; editingCategoryId=null; loadCategories(); });
+  document.getElementById('displayTotalBase').textContent = baseToHuman(base, unit);
+  document.getElementById('displayTotalMrp').textContent  = fmtCurrency(mrp * cnt);
+  document.getElementById('thresholdUnit').textContent    = unit || '';
+}
 
-btnSaveSup.addEventListener('click', saveSupplier);
-btnClearSup.addEventListener('click', ()=>{ sName.value=''; sPhone.value=''; sEmail.value=''; sAddress.value=''; editingSupplierId=null; loadSuppliers(); });
+async function saveMaterial() {
+  const dept          = document.getElementById('inpDept').value;
+  const category      = document.getElementById('inpCategory').value;
+  const materialName  = document.getElementById('inpMaterial').value.trim();
+  const containerSize = parseFloat(document.getElementById('inpContainerSize').value) || 0;
+  const containerUnit = document.getElementById('inpContainerUnit').value;
+  const containerCount= parseFloat(document.getElementById('inpContainerCount').value) || 0;
+  const mrp           = parseFloat(document.getElementById('inpMrp').value) || 0;
+  const threshold     = parseFloat(document.getElementById('inpThreshold').value) || 0;
+  const supplierId    = document.getElementById('inpSupplier').value;
+  const remarks       = document.getElementById('inpRemarks').value.trim();
+  const receivedDate  = document.getElementById('inpDate').value || localDate();
 
-document.getElementById('btnLogout').addEventListener('click', ()=>{ localStorage.removeItem('supervisorName'); toast('Logged out'); setTimeout(()=>location.href='index.html',600); });
+  if (!dept || !category || !materialName || !containerSize || !containerCount) {
+    toast('Please fill all required fields','err'); return;
+  }
 
-/* filter categories automatically when department changes in Add Material form */
-inpDept.addEventListener('change', async () => {
-  await loadCategories(inpDept.value);
+  const perBase  = toBaseQty(containerSize, containerUnit);
+  const addBase  = Math.round(perBase * containerCount * 10000) / 10000;
+  const invValue = Math.round(mrp * containerCount * 100) / 100;
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+
+  try {
+    /* EDIT mode */
+    if (currentEditId) {
+      const updates = {
+        department:     dept,   category,  materialName,
+        containerSize,  containerUnit, containerCount,
+        mrp,            threshold,
+        inventoryValue: invValue,
+        supplierId,     supplierName: await getSupplierName(supplierId),
+        remarks,        receivedDate,
+        updatedAt:      firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection('inventory').doc(currentEditId).update(updates);
+      toast('Item updated');
+      clearAddForm();
+      return;
+    }
+
+    /* Upsert: check if same name+dept+category exists */
+    const q = await db.collection('inventory')
+      .where('materialName','==',materialName)
+      .where('department','==',dept)
+      .where('category','==',category)
+      .limit(1).get();
+
+    if (!q.empty) {
+      /* Add to existing stock */
+      const existing = q.docs[0];
+      const cur = existing.data();
+      const newAvail = Math.round(((cur.availableQty ?? cur.receivedQty ?? 0) + addBase) * 10000) / 10000;
+      const newRecvd = Math.round(((cur.receivedQty  ?? 0) + addBase) * 10000) / 10000;
+      await db.collection('inventory').doc(existing.id).update({
+        receivedQty:    newRecvd,
+        availableQty:   newAvail,
+        totalQty:       newRecvd,
+        mrp:            mrp || cur.mrp || 0,
+        threshold:      threshold || cur.threshold || 0,
+        inventoryValue: Math.round((newRecvd / perBase) * mrp * 100) / 100,
+        supplierId:     supplierId || cur.supplierId || '',
+        supplierName:   supplierId ? await getSupplierName(supplierId) : (cur.supplierName||''),
+        remarks:        remarks || cur.remarks || '',
+        lastReceivedDate: receivedDate,
+        updatedAt:      firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast(`Stock updated: +${baseToHuman(addBase, containerUnit)} added to ${materialName}`);
+      document.getElementById('lastAction').textContent =
+        `Updated ${materialName} — +${baseToHuman(addBase, containerUnit)}`;
+    } else {
+      /* New item */
+      await db.collection('inventory').add({
+        materialName, category, department:dept,
+        containerSize, containerUnit, containerCount,
+        receivedQty:   addBase,
+        availableQty:  addBase,
+        totalQty:      addBase,
+        mrp,
+        threshold,
+        inventoryValue: invValue,
+        supplierId,
+        supplierName:   await getSupplierName(supplierId),
+        remarks,
+        receivedDate,
+        lastReceivedDate: receivedDate,
+        createdAt:     firebase.firestore.FieldValue.serverTimestamp()
+      });
+      toast(`${materialName} added to inventory`);
+      document.getElementById('lastAction').textContent =
+        `Added ${materialName} (${dept}) — ${baseToHuman(addBase, containerUnit)}`;
+    }
+    clearAddForm();
+  } catch(e) {
+    console.error(e); toast('Save failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + (currentEditId ? 'Update Item' : 'Save / Receive');
+  }
+}
+
+function clearAddForm() {
+  ['inpDept','inpCategory','inpMaterial','inpContainerSize','inpMrp','inpThreshold','inpSupplier','inpRemarks'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('inpContainerUnit').value  = 'Litre';
+  document.getElementById('inpContainerCount').value = '1';
+  document.getElementById('inpDate').value = localDate();
+  document.getElementById('displayTotalBase').textContent = '—';
+  document.getElementById('displayTotalMrp').textContent  = '—';
+  document.getElementById('thresholdUnit').textContent    = '';
+  const btn = document.getElementById('btnSave');
+  btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save / Receive';
+  currentEditId = null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOAD INVENTORY (Manage tab)
+══════════════════════════════════════════════════════════════ */
+async function loadInventory() {
+  const tblBody = document.getElementById('tblBody');
+  tblBody.innerHTML = '<tr><td colspan="12"><div class="loader"><div class="spinner"></div></div></td></tr>';
+
+  try {
+    const snap = await db.collection('inventory').orderBy('materialName').get();
+    inventoryData = snap.docs.map(d => ({ _id:d.id, ...d.data() }));
+
+    renderInventoryTable();
+    renderLowStockAlerts();
+  } catch(e) {
+    console.error(e);
+    tblBody.innerHTML = `<tr><td colspan="12" style="color:var(--danger);text-align:center;padding:14px;">
+      Error loading inventory: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderInventoryTable() {
+  const tblBody   = document.getElementById('tblBody');
+  const q         = (document.getElementById('searchBox').value || '').toLowerCase();
+  const fDept     = document.getElementById('filterDept').value;
+  const fStock    = document.getElementById('filterStock').value;
+
+  let rows = inventoryData.filter(r => {
+    if (fDept && r.department !== fDept) return false;
+    if (q && !(r.materialName||'').toLowerCase().includes(q) &&
+             !(r.category||'').toLowerCase().includes(q) &&
+             !(r.supplierName||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  /* Stock level filter */
+  if (fStock === 'low') {
+    rows = rows.filter(r => isLowStock(r));
+  } else if (fStock === 'ok') {
+    rows = rows.filter(r => !isLowStock(r));
+  }
+
+  /* Sort: critical first → warn → ok */
+  rows.sort((a, b) => {
+    const pa = stockPct(a), pb = stockPct(b);
+    return pa - pb;
+  });
+
+  tblBody.innerHTML = '';
+  if (!rows.length) {
+    tblBody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:18px;color:var(--gray5);">No items found</td></tr>';
+    return;
+  }
+
+  rows.forEach((r, i) => {
+    const avail  = r.availableQty ?? r.receivedQty ?? 0;
+    const total  = r.totalQty     ?? r.receivedQty ?? avail;
+    const perBase = toBaseQty(r.containerSize || 0, r.containerUnit || '');
+    const containers = perBase > 0 ? (avail / perBase).toFixed(2) : '—';
+    const pct    = stockPct(r);
+    const low    = isLowStock(r);
+    const crit   = pct < 15;
+
+    const barCls  = crit ? 'sbar-crit' : pct < 40 ? 'sbar-warn' : 'sbar-ok';
+    const rowCls  = crit ? 'row-crit'  : pct < 40 ? 'row-warn'  : 'row-ok';
+    const badge   = crit
+      ? `<span class="badge b-crit">🔴 Critical</span>`
+      : pct < 40
+      ? `<span class="badge b-warn">⚠️ Low</span>`
+      : `<span class="badge b-ok">✅ Good</span>`;
+
+    const invVal = r.inventoryValue
+      ? fmtCurrency(r.inventoryValue)
+      : r.totalMrp ? fmtCurrency(r.totalMrp) : '—';
+
+    tblBody.insertAdjacentHTML('beforeend', `
+      <tr class="${rowCls}">
+        <td>${i+1}</td>
+        <td class="bold">${esc(r.materialName||'—')}</td>
+        <td class="hide-mob">${esc(r.category||'—')}</td>
+        <td><span class="badge b-teal">${esc(r.department||'—')}</span></td>
+        <td>
+          <div style="font-weight:700;">${esc(baseToHuman(avail, r.containerUnit||''))}</div>
+          <div style="font-size:10px;color:var(--gray5);">of ${esc(baseToHuman(total, r.containerUnit||''))}</div>
+        </td>
+        <td style="text-align:center;font-weight:700;">${containers}</td>
+        <td style="font-size:12px;color:var(--gray5);">${esc((r.containerSize||'—')+' '+(r.containerUnit||''))}</td>
+        <td>
+          ${badge}
+          <div class="sbar-wrap"><div class="sbar ${barCls}" style="width:${Math.min(100,pct)}%"></div></div>
+          <div style="font-size:10px;color:var(--gray5);margin-top:2px;">${Math.round(pct)}%</div>
+        </td>
+        <td class="hide-mob">${r.mrp ? fmtCurrency(r.mrp) : '—'}</td>
+        <td class="hide-mob">${invVal}</td>
+        <td class="hide-mob">${esc(r.lastReceivedDate || r.receivedDate || '—')}</td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="openEdit('${r._id}')" title="Edit">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-ok btn-sm" onclick="openReceive('${r._id}')" title="Receive More">
+              <i class="fa-solid fa-truck-ramp-box"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem('${r._id}')" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>`);
+  });
+}
+
+/* Stock helpers */
+function stockPct(r) {
+  const avail = r.availableQty ?? r.receivedQty ?? 0;
+  const total = r.totalQty     ?? r.receivedQty ?? avail;
+  return total > 0 ? (avail / total) * 100 : 0;
+}
+function isLowStock(r) {
+  const avail = r.availableQty ?? r.receivedQty ?? 0;
+  const pct   = stockPct(r);
+  if (r.threshold > 0) return avail < r.threshold;
+  return pct < 20;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOW STOCK ALERTS
+══════════════════════════════════════════════════════════════ */
+function renderLowStockAlerts() {
+  const section  = document.getElementById('lowStockSection');
+  const list     = document.getElementById('lowStockList');
+  const lowItems = inventoryData.filter(r => isLowStock(r))
+    .sort((a,b) => stockPct(a) - stockPct(b));
+
+  document.getElementById('lowCount').textContent = lowItems.length;
+
+  if (!lowItems.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = '';
+
+  lowItems.forEach(r => {
+    const avail = r.availableQty ?? r.receivedQty ?? 0;
+    const pct   = Math.round(stockPct(r));
+    const div   = document.createElement('div');
+    div.className = 'alert-row';
+    div.innerHTML = `
+      <div style="font-size:16px;color:var(--danger);flex-shrink:0;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="a-name">${esc(r.materialName||'—')}</div>
+        <div class="a-sub">
+          ${esc(r.department)} · ${esc(r.category)} ·
+          <strong>${esc(baseToHuman(avail,r.containerUnit||''))}</strong> left (${pct}%)
+          ${r.threshold > 0 ? `· Threshold: ${esc(baseToHuman(r.threshold,r.containerUnit||''))}` : ''}
+        </div>
+      </div>
+      <button class="btn btn-warn btn-sm a-btn" onclick="openReceive('${r._id}')">
+        <i class="fa-solid fa-truck-ramp-box"></i> Receive
+      </button>`;
+    list.appendChild(div);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   KPI STRIP (Manage tab)
+══════════════════════════════════════════════════════════════ */
+async function loadKPIs() {
+  try {
+    const totalItems = inventoryData.length;
+    const lowItems   = inventoryData.filter(r => isLowStock(r)).length;
+    const totalValue = inventoryData.reduce((s,r) => s + (r.inventoryValue || r.totalMrp || 0), 0);
+
+    document.getElementById('kTotal').textContent = totalItems;
+    document.getElementById('kLow').textContent   = lowItems;
+    document.getElementById('kValue').textContent = totalValue >= 1000
+      ? '₹' + (totalValue/1000).toFixed(1) + 'K'
+      : fmtCurrency(Math.round(totalValue));
+
+    const reqSnap = await db.collection('materialRequests').where('status','==','Pending').get();
+    document.getElementById('kReqs').textContent = reqSnap.size;
+
+    /* Update request badge on tab */
+    const badge = document.getElementById('reqBadge');
+    if (reqSnap.size > 0) {
+      badge.textContent = reqSnap.size;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) { console.error('loadKPIs:', e.message); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INLINE RECEIVE MORE (replaces browser prompt())
+══════════════════════════════════════════════════════════════ */
+function openReceive(id) {
+  const item = inventoryData.find(r => r._id === id);
+  if (!item) return;
+  receivingItemId = id;
+
+  document.getElementById('receiveMaterialName').textContent  = item.materialName || '—';
+  document.getElementById('receiveContainerInfo').value       = `${item.containerSize||''} ${item.containerUnit||''} per container`;
+  document.getElementById('receiveDate').value                = localDate();
+  document.getElementById('receiveCount').value               = '1';
+  document.getElementById('receivePreview').textContent       = '';
+
+  const panel = document.getElementById('receivePanel');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  document.getElementById('receiveCount').focus();
+
+  /* Live preview */
+  document.getElementById('receiveCount').oninput = () => {
+    const cnt    = parseFloat(document.getElementById('receiveCount').value) || 0;
+    const addB   = toBaseQty(item.containerSize||0, item.containerUnit||'') * cnt;
+    const curAvl = item.availableQty ?? item.receivedQty ?? 0;
+    document.getElementById('receivePreview').textContent =
+      cnt > 0
+        ? `Adding ${baseToHuman(addB, item.containerUnit||'')} → New available: ${baseToHuman(curAvl + addB, item.containerUnit||'')}`
+        : '';
+  };
+}
+
+document.getElementById('btnCloseReceive').addEventListener('click', () => {
+  document.getElementById('receivePanel').classList.remove('open');
+  receivingItemId = null;
 });
 
-/* ========== Initial load ========== */
-(async function init(){
-  inpDate.value = new Date().toISOString().split('T')[0];
-  show('add');
-  await loadCategories();      // load all categories into management & dropdown
+document.getElementById('btnConfirmReceive').addEventListener('click', async () => {
+  if (!receivingItemId) return;
+  const cnt  = parseFloat(document.getElementById('receiveCount').value) || 0;
+  const date = document.getElementById('receiveDate').value || localDate();
+
+  if (cnt <= 0) { toast('Enter a valid container count','err'); return; }
+
+  const btn = document.getElementById('btnConfirmReceive');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+  try {
+    await db.runTransaction(async tx => {
+      const ref  = db.collection('inventory').doc(receivingItemId);
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Item not found');
+      const cur   = snap.data();
+      const perB  = toBaseQty(cur.containerSize||0, cur.containerUnit||'');
+      const addB  = perB * cnt;
+      const newAvl= Math.round(((cur.availableQty ?? cur.receivedQty ?? 0) + addB) * 10000) / 10000;
+      const newRcv= Math.round(((cur.receivedQty ?? 0) + addB) * 10000) / 10000;
+      const newVal= cur.mrp ? Math.round((newRcv / perB) * cur.mrp * 100) / 100 : (cur.inventoryValue || 0);
+      tx.update(ref, {
+        availableQty:    newAvl,
+        receivedQty:     newRcv,
+        totalQty:        newRcv,
+        inventoryValue:  newVal,
+        lastReceivedDate: date,
+        updatedAt:       firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    toast('Stock received and updated');
+    document.getElementById('receivePanel').classList.remove('open');
+    receivingItemId = null;
+    loadInventory(); loadKPIs();
+  } catch(e) {
+    console.error(e); toast('Receive failed: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirm';
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   EDIT ITEM
+══════════════════════════════════════════════════════════════ */
+async function openEdit(id) {
+  try {
+    const doc = await db.collection('inventory').doc(id).get();
+    if (!doc.exists) { toast('Item not found','err'); return; }
+    const d = doc.data();
+    showTab('add');
+
+    document.getElementById('inpDept').value          = d.department      || '';
+    await loadCategories(d.department || '');
+    document.getElementById('inpCategory').value      = d.category        || '';
+    document.getElementById('inpMaterial').value      = d.materialName    || '';
+    document.getElementById('inpContainerSize').value = d.containerSize   || '';
+    document.getElementById('inpContainerUnit').value = d.containerUnit   || 'Litre';
+    document.getElementById('inpContainerCount').value= d.containerCount  || 1;
+    document.getElementById('inpMrp').value           = d.mrp             || '';
+    document.getElementById('inpThreshold').value     = d.threshold       || '';
+    document.getElementById('inpSupplier').value      = d.supplierId      || '';
+    document.getElementById('inpRemarks').value       = d.remarks         || '';
+    document.getElementById('inpDate').value          = d.receivedDate    || localDate();
+
+    currentEditId = id;
+    recalcPreview();
+    const btn = document.getElementById('btnSave');
+    btn.innerHTML = '<i class="fa-solid fa-pen"></i> Update Item';
+    document.getElementById('lastAction').textContent = `Editing: ${d.materialName}`;
+  } catch(e) { console.error(e); toast('Open edit failed','err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DELETE ITEM
+══════════════════════════════════════════════════════════════ */
+async function deleteItem(id) {
+  if (!confirm('Delete this inventory item permanently?')) return;
+  try {
+    await db.collection('inventory').doc(id).delete();
+    toast('Item deleted');
+    loadInventory(); loadKPIs();
+  } catch(e) { toast('Delete failed','err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PENDING REQUESTS (materialRequests collection)
+   Admin can Approve / Reject
+══════════════════════════════════════════════════════════════ */
+async function loadRequests() {
+  const container = document.getElementById('requestsList');
+  container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+  const statusFilter = document.getElementById('reqStatusFilter').value;
+
+  try {
+    let q = db.collection('materialRequests').orderBy('createdAt','desc');
+    if (statusFilter) q = db.collection('materialRequests')
+      .where('status','==',statusFilter).orderBy('createdAt','desc');
+
+    const snap = await q.get();
+    container.innerHTML = '';
+
+    if (snap.empty) {
+      container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--gray5);font-size:13px;">
+        <i class="fa-solid fa-inbox" style="font-size:24px;opacity:.3;display:block;margin-bottom:8px;"></i>
+        No ${statusFilter||''} requests found</div>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const r  = doc.data();
+      const dt = r.createdAt?.toDate ? r.createdAt.toDate() : null;
+      const dtStr = dt ? dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+      const statusBadge = r.status === 'Approved'
+        ? `<span class="badge b-ok">✅ Approved</span>`
+        : r.status === 'Rejected'
+        ? `<span class="badge b-crit">❌ Rejected</span>`
+        : `<span class="badge b-warn">⏳ Pending</span>`;
+
+      const actions = r.status === 'Pending' ? `
+        <button class="btn btn-ok btn-sm" onclick="updateRequestStatus('${doc.id}','Approved')">
+          <i class="fa-solid fa-check"></i> Approve
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="updateRequestStatus('${doc.id}','Rejected')" style="margin-left:4px;">
+          <i class="fa-solid fa-xmark"></i> Reject
+        </button>` : '';
+
+      container.insertAdjacentHTML('beforeend', `
+        <div class="req-card">
+          <div class="req-info">
+            <div class="req-name">${esc(r.materialName||'—')}</div>
+            <div class="req-meta">
+              <span class="badge b-teal" style="margin-right:4px;">${esc(r.department||'—')}</span>
+              ${esc(r.category||'—')} ·
+              <strong>Qty: ${esc(r.requestedQty||'?')} ${esc(r.requestedUnit||'')}</strong> ·
+              For: ${esc(r.monthFor||'—')} ·
+              By: ${esc(r.requestedBy||'—')} ·
+              ${dtStr}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            ${statusBadge}
+            ${actions}
+          </div>
+        </div>`);
+    });
+  } catch(e) {
+    console.error(e);
+    container.innerHTML = `<div style="color:var(--danger);padding:14px;">Error loading requests: ${esc(e.message)}</div>`;
+  }
+}
+
+async function updateRequestStatus(id, status) {
+  try {
+    await db.collection('materialRequests').doc(id).update({
+      status,
+      reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`Request ${status.toLowerCase()}`);
+    loadRequests();
+    loadKPIs();
+  } catch(e) { toast('Update failed','err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENTS
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btnSave').addEventListener('click', saveMaterial);
+document.getElementById('btnClear').addEventListener('click', clearAddForm);
+document.getElementById('inpContainerSize').addEventListener('input', recalcPreview);
+document.getElementById('inpContainerUnit').addEventListener('change', recalcPreview);
+document.getElementById('inpContainerCount').addEventListener('input', recalcPreview);
+document.getElementById('inpMrp').addEventListener('input', recalcPreview);
+
+document.getElementById('inpDept').addEventListener('change', () => {
+  loadCategories(document.getElementById('inpDept').value);
+});
+
+document.getElementById('btnAddCategory').addEventListener('click', () => {
+  showTab('categories');
+  document.getElementById('catName').focus();
+});
+document.getElementById('btnAddSupplier').addEventListener('click', () => {
+  showTab('suppliers');
+  document.getElementById('sName').focus();
+});
+document.getElementById('btnRefresh').addEventListener('click', async () => {
+  await loadCategories(); await loadSuppliers();
+  toast('Data refreshed');
+});
+
+document.getElementById('searchBox').addEventListener('input', renderInventoryTable);
+document.getElementById('filterDept').addEventListener('change', renderInventoryTable);
+document.getElementById('filterStock').addEventListener('change', renderInventoryTable);
+document.getElementById('btnReload').addEventListener('click', () => { loadInventory(); loadKPIs(); });
+
+document.getElementById('btnSaveCat').addEventListener('click', saveCategory);
+document.getElementById('btnClearCat').addEventListener('click', () => {
+  document.getElementById('catName').value = '';
+  document.getElementById('catDept').value = '';
+  editingCategoryId = null;
+  document.getElementById('catFormTitle').textContent = 'Add Category';
+});
+
+document.getElementById('btnSaveSup').addEventListener('click', saveSupplier);
+document.getElementById('btnClearSup').addEventListener('click', () => {
+  ['sName','sContact','sPhone','sEmail','sAddress'].forEach(id => document.getElementById(id).value = '');
+  editingSupplierId = null;
+  document.getElementById('supFormTitle').textContent = 'Add Supplier';
+});
+
+document.getElementById('reqStatusFilter').addEventListener('change', loadRequests);
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  auth.signOut().finally(() => location.href = 'index.html');
+});
+
+/* ══════════════════════════════════════════════════════════════
+   INITIAL LOAD
+══════════════════════════════════════════════════════════════ */
+(async function init() {
+  document.getElementById('inpDate').value = localDate();
+  document.getElementById('receiveDate').value = localDate();
+  await loadCategories();
   await loadSuppliers();
-  await loadInventory();
+  /* Show Add tab first */
+  showTab('add');
 })();
 </script>
 </body>
