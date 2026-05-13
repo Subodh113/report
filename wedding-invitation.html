@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>शादी का निमंत्रण - अनुरागिनी प्रिया & शुभम कुमार सिंह</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Serif+Devanagari:wght@300;400;500;600;700&family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8D5A3;
+    --gold-dark: #8B6914;
+    --maroon: #7B1E3A;
+    --maroon-light: #9B3050;
+    --cream: #FDF6E3;
+    --cream-dark: #F5E8C8;
+    --deep: #1A0A0F;
+    --rose: #D4526A;
+    --rose-light: #F4A0B0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0D0508;
+    min-height: 100vh;
+    font-family: 'Noto Serif Devanagari', serif;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ===== LANDING / ENVELOPE ===== */
+  #envelope-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: radial-gradient(ellipse at center, #2a0d18 0%, #0D0508 70%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  #envelope-screen.open {
+    opacity: 0; transform: scale(1.1) translateY(-40px);
+    pointer-events: none;
+  }
+
+  .env-glow {
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+
+  .envelope-wrap {
+    position: relative; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .envelope-svg { width: 260px; filter: drop-shadow(0 20px 60px rgba(201,168,76,0.4)); }
+
+  .env-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    color: var(--gold-light);
+    text-shadow: 0 0 40px rgba(201,168,76,0.6);
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .env-subtitle {
+    font-family: 'Noto Serif Devanagari', serif;
+    color: rgba(232,213,163,0.7);
+    font-size: 0.95rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .open-btn {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    border: none; color: var(--deep);
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1rem; font-weight: 600;
+    padding: 14px 44px; border-radius: 50px;
+    cursor: pointer; letter-spacing: 2px;
+    box-shadow: 0 8px 32px rgba(201,168,76,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+    transition: all 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .open-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+  .open-btn:hover::before { transform: translateX(100%); }
+  .open-btn:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(201,168,76,0.6); }
+
+  /* ===== PARTICLES ===== */
+  .particle {
+    position: fixed; pointer-events: none; z-index: 200;
+    font-size: 1.4rem;
+    animation: particle-fall linear forwards;
+    opacity: 0;
+  }
+  @keyframes particle-fall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.3); }
+  }
+
+  /* ===== INVITATION CARD ===== */
+  #invitation {
+    display: none;
+    max-width: 820px; margin: 0 auto; padding: 20px;
+    position: relative; z-index: 10;
+  }
+  #invitation.visible { display: block; animation: revealCard 1s ease forwards; }
+  @keyframes revealCard {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ===== MAIN CARD ===== */
+  .card {
+    background: var(--cream);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,168,76,0.3);
+  }
+
+  /* Decorative border layers */
+  .card::before {
+    content: '';
+    position: absolute; inset: 12px;
+    border: 1.5px solid rgba(201,168,76,0.5);
+    border-radius: 2px;
+    pointer-events: none; z-index: 10;
+  }
+  .card::after {
+    content: '';
+    position: absolute; inset: 18px;
+    border: 0.5px solid rgba(201,168,76,0.25);
+    border-radius: 1px;
+    pointer-events: none; z-index: 10;
+  }
+
+  /* ===== HEADER ===== */
+  .card-header {
+    background: linear-gradient(180deg, var(--maroon) 0%, #5A0F28 60%, #3D0A1C 100%);
+    padding: 50px 40px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A84C' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+
+  .om-symbol {
+    font-size: 2.5rem;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(201,168,76,0.5);
+    display: block;
+    margin-bottom: 16px;
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+  @keyframes glow-pulse {
+    0%,100% { text-shadow: 0 0 20px rgba(201,168,76,0.5); }
+    50% { text-shadow: 0 0 40px rgba(201,168,76,0.9), 0 0 60px rgba(201,168,76,0.4); }
+  }
+
+  .header-divider {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin: 16px 0;
+  }
+  .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); max-width: 120px; }
+  .divider-diamond { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 10px rgba(201,168,76,0.6); }
+
+  .main-title {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    color: var(--gold-light);
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    line-height: 1.3;
+  }
+
+  .shubh-text {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(3rem, 10vw, 5rem);
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 4px 12px rgba(0,0,0,0.3);
+    line-height: 1;
+    margin: 8px 0;
+  }
+
+  /* ===== COUPLE NAMES ===== */
+  .couple-section {
+    background: var(--cream);
+    padding: 44px 40px 36px;
+    text-align: center;
+    position: relative;
+  }
+
+  .couple-names {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .bride-name, .groom-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .bride-name { color: var(--maroon); }
+  .groom-name { color: var(--maroon); }
+
+  .name-hindi {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    color: var(--gold-dark);
+    font-weight: 500;
+    display: block;
+    margin-top: 4px;
+  }
+
+  .and-symbol {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    color: var(--rose);
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(212,82,106,0.3);
+  }
+
+  .mandap-icon { font-size: 2.5rem; margin: 16px 0; display: block; }
+
+  /* ===== GUEST NAME BANNER ===== */
+  .guest-banner {
+    background: linear-gradient(135deg, var(--maroon) 0%, #9B1A40 50%, var(--maroon) 100%);
+    padding: 20px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .guest-banner::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(201,168,76,0.05) 10px, rgba(201,168,76,0.05) 20px);
+  }
+  .guest-label {
+    font-family: 'Noto Serif Devanagari', serif;
+    color: var(--gold-light);
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+  .guest-name-display {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    color: var(--gold);
+    font-style: italic;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+    min-height: 1.4em;
+    transition: all 0.5s ease;
+  }
+
+  /* ===== SCHEDULE ===== */
+  .schedule-section {
+    background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+    padding: 40px 30px;
+  }
+
+  .section-header {
+    text-align: center; margin-bottom: 28px;
+  }
+  .section-title {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1.3rem;
+    color: var(--maroon);
+    font-weight: 600;
+    letter-spacing: 3px;
+  }
+
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 130px; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--gold), var(--gold), transparent);
+  }
+
+  .event-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    padding: 14px 0;
+    animation: slideIn 0.6s ease forwards;
+    opacity: 0;
+  }
+  .event-row:nth-child(1) { animation-delay: 0.1s; }
+  .event-row:nth-child(2) { animation-delay: 0.2s; }
+  .event-row:nth-child(3) { animation-delay: 0.3s; }
+  .event-row:nth-child(4) { animation-delay: 0.4s; }
+  .event-row:nth-child(5) { animation-delay: 0.5s; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .event-date {
+    width: 120px; min-width: 120px;
+    text-align: right;
+    padding-right: 24px;
+  }
+  .date-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--maroon);
+    display: block;
+  }
+  .date-day {
+    font-size: 0.75rem;
+    color: var(--gold-dark);
+    letter-spacing: 1px;
+  }
+
+  .event-dot {
+    width: 14px; height: 14px; min-width: 14px;
+    background: var(--gold);
+    border-radius: 50%;
+    border: 2px solid var(--cream);
+    box-shadow: 0 0 8px rgba(201,168,76,0.5);
+    z-index: 1;
+    position: relative;
+  }
+  .event-dot.main-dot {
+    width: 18px; height: 18px; min-width: 18px;
+    background: var(--maroon);
+    border: 2px solid var(--gold);
+  }
+
+  .event-info { padding-left: 24px; }
+  .event-name {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--deep);
+  }
+  .event-name.highlight { color: var(--maroon); font-size: 1.15rem; }
+  .event-emoji { margin-right: 6px; }
+
+  .travel-note {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 0.88rem;
+    color: var(--gold-dark);
+    font-family: 'Noto Serif Devanagari', serif;
+    line-height: 1.7;
+    text-align: center;
+  }
+
+  /* ===== FAMILY SECTIONS ===== */
+  .family-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .family-section {
+    padding: 32px 28px;
+    text-align: center;
+    position: relative;
+  }
+  .family-section:first-child {
+    background: linear-gradient(135deg, #FDF0F3, #F8E0E6);
+    border-right: 1px solid rgba(201,168,76,0.3);
+  }
+  .family-section:last-child {
+    background: linear-gradient(135deg, #F0F3FD, #E0E6F8);
+  }
+
+  .family-label {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .family-label::before, .family-label::after {
+    content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.4);
+  }
+
+  .person-name {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--maroon);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .person-detail {
+    font-size: 0.82rem;
+    color: #555;
+    line-height: 1.7;
+    font-family: 'Noto Serif Devanagari', serif;
+  }
+  .person-detail strong { color: var(--maroon); font-weight: 600; }
+
+  /* ===== VENUE ===== */
+  .venue-section {
+    background: linear-gradient(180deg, #2A0D18 0%, var(--maroon) 100%);
+    padding: 36px 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .venue-section::before {
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C9A84C' fill-opacity='0.05'%3E%3Cpath d='M20 20.5V18H0v5h5v5H0v5h20v-2.5h20V20.5H20zM5 5H0V0h5V5zm10 0h-5V0h5V5zm10 0h-5V0h5V5zm10 0h-5V0h5V5zm0 10h-5V10h5v5zm0 10h-5V20h5v5zm0 10h-5V30h5v5zM10 5h5V0h-5V5z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .venue-title {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    color: var(--gold-light);
+    opacity: 0.7;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .venue-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    color: var(--gold);
+    font-style: italic;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  }
+  .venue-address {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 0.9rem;
+    color: rgba(232,213,163,0.8);
+    line-height: 1.8;
+  }
+
+  /* ===== PEOPLE GRID ===== */
+  .people-section {
+    background: var(--cream-dark);
+    padding: 30px;
+  }
+  .people-grid {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 8px;
+    margin-top: 12px;
+  }
+  .person-tag {
+    background: white;
+    border: 1px solid rgba(201,168,76,0.3);
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    color: var(--maroon);
+    font-family: 'Noto Serif Devanagari', serif;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .person-tag:hover { background: var(--maroon); color: var(--gold-light); transform: scale(1.05); }
+
+  /* ===== CONTACT ===== */
+  .contact-section {
+    background: var(--cream);
+    padding: 30px;
+    text-align: center;
+    border-top: 1px solid rgba(201,168,76,0.2);
+  }
+  .contact-name {
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--maroon);
+    margin-bottom: 8px;
+  }
+  .contact-phones {
+    display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;
+  }
+  .phone-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--maroon), var(--maroon-light));
+    color: var(--gold-light);
+    text-decoration: none;
+    padding: 10px 20px; border-radius: 50px;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(123,30,58,0.3);
+  }
+  .phone-link:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(123,30,58,0.5); }
+
+  /* ===== FOOTER ===== */
+  .card-footer {
+    background: linear-gradient(180deg, var(--maroon) 0%, #3D0A1C 100%);
+    padding: 28px 30px;
+    text-align: center;
+  }
+  .footer-text {
+    font-family: 'Noto Serif Devanagari', serif;
+    color: rgba(232,213,163,0.7);
+    font-size: 0.9rem;
+    line-height: 1.8;
+    font-style: italic;
+  }
+  .footer-names {
+    font-family: 'Great Vibes', cursive;
+    font-size: 2rem;
+    color: var(--gold);
+    margin-top: 10px;
+    text-shadow: 0 0 15px rgba(201,168,76,0.4);
+  }
+
+  /* ===== GUEST INPUT FORM ===== */
+  .guest-input-section {
+    background: #0D0508;
+    padding: 40px 30px;
+    text-align: center;
+  }
+  .input-card {
+    background: linear-gradient(135deg, #1A0A0F, #2A0D18);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 16px;
+    padding: 32px 30px;
+    max-width: 480px;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .input-title {
+    font-family: 'Noto Serif Devanagari', serif;
+    color: var(--gold-light);
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+  }
+  .input-subtitle {
+    color: rgba(232,213,163,0.5);
+    font-size: 0.82rem;
+    margin-bottom: 24px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+
+  .name-input-wrap { position: relative; margin-bottom: 16px; }
+  .name-input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--gold-light);
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  .name-input:focus {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.05);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+  }
+  .name-input::placeholder { color: rgba(232,213,163,0.3); }
+
+  .personalize-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    border: none; color: var(--deep);
+    font-family: 'Noto Serif Devanagari', serif;
+    font-size: 1rem; font-weight: 600;
+    padding: 14px 30px; border-radius: 8px;
+    cursor: pointer; letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+  }
+  .personalize-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(201,168,76,0.5);
+  }
+
+  .share-section { margin-top: 20px; }
+  .share-hint {
+    color: rgba(232,213,163,0.4);
+    font-size: 0.78rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+
+  /* ===== CORNER ORNAMENTS ===== */
+  .corner-ornament {
+    position: absolute;
+    width: 60px; height: 60px;
+    opacity: 0.6;
+  }
+  .corner-ornament.tl { top: 24px; left: 24px; }
+  .corner-ornament.tr { top: 24px; right: 24px; transform: scaleX(-1); }
+  .corner-ornament.bl { bottom: 24px; left: 24px; transform: scaleY(-1); }
+  .corner-ornament.br { bottom: 24px; right: 24px; transform: scale(-1); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .family-container { grid-template-columns: 1fr; }
+    .family-section:first-child { border-right: none; border-bottom: 1px solid rgba(201,168,76,0.3); }
+    .timeline::before { left: 100px; }
+    .event-date { width: 90px; min-width: 90px; }
+    .couple-names { flex-direction: column; gap: 4px; }
+    .and-symbol { font-size: 2.5rem; }
+    .card-header, .couple-section, .schedule-section, .people-section,
+    .venue-section, .contact-section, .card-footer { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ENVELOPE SCREEN ===== -->
+<div id="envelope-screen">
+  <div class="env-glow"></div>
+  <div class="envelope-wrap" onclick="openInvitation()">
+    <svg class="envelope-svg" viewBox="0 0 260 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="envGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#8B1A38"/>
+          <stop offset="50%" style="stop-color:#A82040"/>
+          <stop offset="100%" style="stop-color:#6B0F28"/>
+        </linearGradient>
+        <linearGradient id="flapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#C9A84C"/>
+          <stop offset="100%" style="stop-color:#8B6914"/>
+        </linearGradient>
+      </defs>
+      <!-- Envelope body -->
+      <rect x="10" y="50" width="240" height="120" rx="6" fill="url(#envGrad)" stroke="#C9A84C" stroke-width="1.5"/>
+      <!-- Envelope flap -->
+      <path d="M10 50 L130 120 L250 50 Z" fill="url(#flapGrad)" opacity="0.9"/>
+      <!-- Envelope bottom folds -->
+      <path d="M10 170 L85 110 L10 50Z" fill="rgba(0,0,0,0.15)"/>
+      <path d="M250 170 L175 110 L250 50Z" fill="rgba(0,0,0,0.15)"/>
+      <!-- Bottom fold -->
+      <path d="M10 170 L130 105 L250 170Z" fill="rgba(201,168,76,0.1)" stroke="rgba(201,168,76,0.3)" stroke-width="0.5"/>
+      <!-- Seal -->
+      <circle cx="130" cy="115" r="20" fill="#8B6914" stroke="#C9A84C" stroke-width="1.5"/>
+      <text x="130" y="121" text-anchor="middle" font-size="16" fill="#FDF6E3">ॐ</text>
+      <!-- Corner flowers -->
+      <text x="28" y="70" font-size="14" opacity="0.7">🌸</text>
+      <text x="224" y="70" font-size="14" opacity="0.7">🌸</text>
+    </svg>
+    <div style="text-align:center">
+      <div class="env-title">शादी का निमंत्रण</div>
+      <div class="env-subtitle">Wedding Invitation</div>
+    </div>
+    <button class="open-btn">✉ निमंत्रण खोलें</button>
+  </div>
+</div>
+
+<!-- ===== INVITATION CARD ===== -->
+<div id="invitation">
+
+  <!-- Input section at top -->
+  <div class="guest-input-section">
+    <div class="input-card">
+      <div class="input-title">🌺 अतिथि का नाम लिखें</div>
+      <div class="input-subtitle">Personalise your invitation</div>
+      <div class="name-input-wrap">
+        <input type="text" class="name-input" id="guestNameInput"
+          placeholder="अपना नाम यहाँ लिखें..."
+          oninput="updateGuestName(this.value)"
+          maxlength="60"
+        />
+      </div>
+      <button class="personalize-btn" onclick="updateGuestName(document.getElementById('guestNameInput').value)">
+        🎊 निमंत्रण तैयार करें
+      </button>
+      <div class="share-section">
+        <div class="share-hint">👆 नाम लिखकर निमंत्रण कार्ड शेयर करें</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+
+    <!-- HEADER -->
+    <div class="card-header">
+      <!-- Corner ornaments -->
+      <svg class="corner-ornament tl" viewBox="0 0 60 60" fill="none">
+        <path d="M5 5 Q30 5 30 30 Q5 30 5 5Z" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.1)"/>
+        <path d="M5 5 L5 20 M5 5 L20 5" stroke="#C9A84C" stroke-width="1.5"/>
+        <circle cx="5" cy="5" r="3" fill="#C9A84C"/>
+      </svg>
+      <svg class="corner-ornament tr" viewBox="0 0 60 60" fill="none">
+        <path d="M5 5 Q30 5 30 30 Q5 30 5 5Z" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.1)"/>
+        <path d="M5 5 L5 20 M5 5 L20 5" stroke="#C9A84C" stroke-width="1.5"/>
+        <circle cx="5" cy="5" r="3" fill="#C9A84C"/>
+      </svg>
+      <svg class="corner-ornament bl" viewBox="0 0 60 60" fill="none">
+        <path d="M5 5 Q30 5 30 30 Q5 30 5 5Z" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.1)"/>
+        <path d="M5 5 L5 20 M5 5 L20 5" stroke="#C9A84C" stroke-width="1.5"/>
+        <circle cx="5" cy="5" r="3" fill="#C9A84C"/>
+      </svg>
+      <svg class="corner-ornament br" viewBox="0 0 60 60" fill="none">
+        <path d="M5 5 Q30 5 30 30 Q5 30 5 5Z" stroke="#C9A84C" stroke-width="1" fill="rgba(201,168,76,0.1)"/>
+        <path d="M5 5 L5 20 M5 5 L20 5" stroke="#C9A84C" stroke-width="1.5"/>
+        <circle cx="5" cy="5" r="3" fill="#C9A84C"/>
+      </svg>
+
+      <span class="om-symbol">ॐ</span>
+      <div class="header-divider">
+        <div class="divider-line"></div>
+        <div class="divider-diamond"></div>
+        <div class="main-title">शुभ विवाह</div>
+        <div class="divider-diamond"></div>
+        <div class="divider-line"></div>
+      </div>
+      <div class="shubh-text">Vivah Mahotsav</div>
+      <div style="font-family:'Noto Serif Devanagari',serif;color:rgba(232,213,163,0.75);font-size:0.9rem;letter-spacing:2px;margin-top:8px;">
+        🪷 वैवाहिक कार्यक्रम में सादर आमंत्रण 🪷
+      </div>
+    </div>
+
+    <!-- GUEST NAME BANNER -->
+    <div class="guest-banner">
+      <div class="guest-label">आदरणीय अतिथि</div>
+      <div class="guest-name-display" id="guestDisplay">
+        ✨ आपका स्वागत है ✨
+      </div>
+    </div>
+
+    <!-- COUPLE NAMES -->
+    <div class="couple-section">
+      <div class="couple-names">
+        <div class="bride-name">
+          कु. अनुरागिनी प्रिया
+          <span class="name-hindi" style="font-size:0.85rem;color:#888;">सुपुत्री - श्री बबन सिंह</span>
+        </div>
+        <div class="and-symbol">&amp;</div>
+        <div class="groom-name">
+          शुभम कुमार सिंह
+          <span class="name-hindi" style="font-size:0.85rem;color:#888;">सुपुत्र - श्री अनिरुद्ध सिंह</span>
+        </div>
+      </div>
+      <span class="mandap-icon">🪷</span>
+      <div style="font-family:'Cormorant Garamond',serif;font-style:italic;color:#888;font-size:1rem;letter-spacing:1px;">
+        Together in love, forever in life
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="schedule-section">
+      <div class="section-header">
+        <div class="header-divider" style="max-width:320px;margin:0 auto 12px;">
+          <div class="divider-line"></div>
+          <div class="divider-diamond"></div>
+          <div class="section-title">कार्यक्रम विवरण</div>
+          <div class="divider-diamond"></div>
+          <div class="divider-line"></div>
+        </div>
+        <div style="color:#888;font-size:0.82rem;letter-spacing:2px;font-family:'Cormorant Garamond',serif;font-style:italic;">June 2026</div>
+      </div>
+
+      <div class="timeline">
+        <div class="event-row">
+          <div class="event-date">
+            <span class="date-num">19 Jun</span>
+            <span class="date-day">शुक्रवार</span>
+          </div>
+          <div class="event-dot"></div>
+          <div class="event-info">
+            <div class="event-name"><span class="event-emoji">🪔</span>तिलकोत्सव</div>
+          </div>
+        </div>
+        <div class="event-row">
+          <div class="event-date">
+            <span class="date-num">20 Jun</span>
+            <span class="date-day">शनिवार</span>
+          </div>
+          <div class="event-dot"></div>
+          <div class="event-info">
+            <div class="event-name"><span class="event-emoji">🌿</span>मण्डप एवं हल्दी</div>
+          </div>
+        </div>
+        <div class="event-row">
+          <div class="event-date">
+            <span class="date-num">21 Jun</span>
+            <span class="date-day">रविवार</span>
+          </div>
+          <div class="event-dot"></div>
+          <div class="event-info">
+            <div class="event-name"><span class="event-emoji">🌺</span>मेहन्दी रश्म</div>
+          </div>
+        </div>
+        <div class="event-row">
+          <div class="event-date">
+            <span class="date-num">22 Jun</span>
+            <span class="date-day">सोमवार</span>
+          </div>
+          <div class="event-dot main-dot"></div>
+          <div class="event-info">
+            <div class="event-name highlight"><span class="event-emoji">🎺</span>बारात आगमन</div>
+          </div>
+        </div>
+        <div class="event-row">
+          <div class="event-date">
+            <span class="date-num">23 Jun</span>
+            <span class="date-day">मंगलवार</span>
+          </div>
+          <div class="event-dot main-dot"></div>
+          <div class="event-info">
+            <div class="event-name highlight"><span class="event-emoji">💒</span>बारात एवं कन्या विदाई</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="travel-note">
+        🚌 <strong>तिलक प्रस्थान:</strong> सायं 05:00 बजे चन्दनपुरा से सुरक्षित वाहन द्वारा<br>
+        निरंजन बिघा (डिहरी) के लिए प्रस्थान करेगी।
+      </div>
+    </div>
+
+    <!-- VENUE -->
+    <div class="venue-section">
+      <div class="venue-title">📍 विवाह स्थल</div>
+      <div class="venue-name">चन्दनपुरा</div>
+      <div class="venue-address">
+        ग्राम+पोस्ट: चन्दनपुरा, थाना: तिलौथू<br>
+        जिला: रोहतास (बिहार) — पिन: 821312
+      </div>
+      <div style="margin-top:12px;font-size:0.8rem;color:rgba(232,213,163,0.5);font-family:'Cormorant Garamond',serif;font-style:italic;">
+        समस्त वैवाहिक कार्यक्रम पैतृक निवास से सम्पन्न होगा।
+      </div>
+    </div>
+
+    <!-- FAMILY SECTIONS -->
+    <div class="family-container">
+      <!-- Bride's side -->
+      <div class="family-section">
+        <div class="family-label">कन्या पक्ष</div>
+        <div class="person-name">श्री बबन सिंह<br>एवं श्रीमती वीणा देवी</div>
+        <div class="person-detail" style="margin-top:8px;">
+          <strong>सुपौत्री</strong> स्व. नथुनी सिंह एवं स्व. जगत देवी<br><br>
+          <strong>ग्राम+पोस्ट:</strong> चन्दनपुरा<br>
+          थाना: तिलौथू, जिला: रोहतास (बिहार)<br>
+          पिन: 821312
+        </div>
+      </div>
+      <!-- Groom's side -->
+      <div class="family-section">
+        <div class="family-label">वर पक्ष</div>
+        <div class="person-name">श्री अनिरुद्ध सिंह<br>एवं श्रीमती इन्दु देवी</div>
+        <div class="person-detail" style="margin-top:8px;">
+          <strong>सुपौत्र</strong> स्व. कामता सिंह एवं स्व. शान्ति देवी<br><br>
+          <strong>ग्राम:</strong> डिलियाँ, पोस्ट: खैरहाँ<br>
+          थाना: डिहरी मुफस्सिल, रोहतास (बिहार)<br>
+          पिन: 821305
+        </div>
+      </div>
+    </div>
+
+    <!-- CHILDREN & OTHERS -->
+    <div class="people-section">
+      <div class="section-header" style="margin-bottom:14px;">
+        <div class="section-title" style="font-size:1rem;">👦🏻 बाल आग्रह</div>
+      </div>
+      <div class="people-grid">
+        <span class="person-tag">विधांत</span>
+        <span class="person-tag">सिद्धांत</span>
+        <span class="person-tag">शिवांश</span>
+        <span class="person-tag">सिया</span>
+        <span class="person-tag">विधि</span>
+        <span class="person-tag">स्वेच्छा</span>
+        <span class="person-tag">सिद्धि</span>
+        <span class="person-tag">सान्वी</span>
+        <span class="person-tag">अरिजीत</span>
+        <span class="person-tag">अभिनव</span>
+      </div>
+
+      <div style="margin-top:22px;">
+        <div class="section-title" style="font-size:1rem;margin-bottom:10px;">🌟 आकांक्षी एवं स्वागतोत्सुक</div>
+        <div class="people-grid">
+          <span class="person-tag">श्री दिनेश्वर सिंह</span>
+          <span class="person-tag">ललन सिंह</span>
+          <span class="person-tag">ददन सिंह</span>
+        </div>
+      </div>
+
+      <div style="margin-top:22px;">
+        <div class="section-title" style="font-size:0.95rem;margin-bottom:10px;">🙏 दर्शनाभिलाषी</div>
+        <div class="people-grid">
+          <span class="person-tag">सुशील कुमार सिंह (डब्लू जी)</span>
+          <span class="person-tag">सुनील सिंह (गुड्डूजी)</span>
+          <span class="person-tag">अमित कुमार सिंह (इंडियन आर्मी)</span>
+          <span class="person-tag">आलोक सिंह</span>
+          <span class="person-tag">विवेक रंजन सिंह (भोलाजी)</span>
+          <span class="person-tag">कुन्दन सिंह</span>
+          <span class="person-tag">चन्दन सिंह</span>
+          <span class="person-tag">समस्त कलहंस परिवार</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="contact-section">
+      <div style="font-family:'Noto Serif Devanagari',serif;font-size:0.8rem;letter-spacing:3px;color:var(--gold-dark);text-transform:uppercase;margin-bottom:14px;">📞 सम्पर्क / प्रेषक</div>
+      <div class="contact-name">श्री बबन सिंह</div>
+      <div class="contact-phones" style="margin-top:10px;">
+        <a href="tel:8002007927" class="phone-link">📱 8002007927</a>
+        <a href="tel:8084593464" class="phone-link">📱 8084593464</a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="card-footer">
+      <div class="footer-text">
+        आपकी उपस्थिति हमारे लिए<br>सबसे बड़ा आशीर्वाद होगी।
+      </div>
+      <div class="footer-names">Anuragini & Shubham</div>
+      <div style="margin-top:16px;font-size:1.5rem;">🌸 💒 🌸</div>
+      <div style="color:rgba(232,213,163,0.4);font-size:0.75rem;margin-top:12px;font-family:'Cormorant Garamond',serif;font-style:italic;letter-spacing:1px;">
+        19 – 23 June 2026 · Chandanpura, Rohtas, Bihar
+      </div>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /invitation -->
+
+<script>
+  // Check URL for pre-set guest name
+  const urlParams = new URLSearchParams(window.location.search);
+  const presetName = urlParams.get('guest');
+  if (presetName) {
+    document.getElementById('guestNameInput').value = presetName;
+    updateGuestName(presetName);
+  }
+
+  function updateGuestName(name) {
+    const display = document.getElementById('guestDisplay');
+    if (name && name.trim()) {
+      display.innerHTML = `✨ ${name.trim()} जी ✨`;
+      display.style.color = '#E8D5A3';
+    } else {
+      display.innerHTML = '✨ आपका स्वागत है ✨';
+      display.style.color = 'rgba(232,213,163,0.7)';
+    }
+  }
+
+  function spawnParticles() {
+    const emojis = ['🌸','🌺','🪷','✨','💐','🌼','🎊','💫','⭐','🪔'];
+    for (let i = 0; i < 30; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'particle';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.top = '-40px';
+        el.style.animationDuration = (2 + Math.random() * 3) + 's';
+        el.style.animationDelay = (Math.random() * 1.5) + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5500);
+      }, i * 60);
+    }
+  }
+
+  function openInvitation() {
+    spawnParticles();
+    const env = document.getElementById('envelope-screen');
+    const inv = document.getElementById('invitation');
+    env.classList.add('open');
+    setTimeout(() => {
+      env.style.display = 'none';
+      inv.style.display = 'block';
+      requestAnimationFrame(() => {
+        inv.classList.add('visible');
+        window.scrollTo({ top: 0 });
+      });
+    }, 800);
+  }
+
+  // Allow Enter key in input
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('guestNameInput');
+    if (input) {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') updateGuestName(input.value);
+      });
+    }
+    // Auto-open if guest param set
+    if (presetName) {
+      openInvitation();
+    }
+  });
+</script>
+</body>
+</html>
